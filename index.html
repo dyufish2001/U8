@@ -3,12 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="2026 就是棒 U8 秋季聯賽打擊統計系統 — 打擊榜、打者分析、獎項排行、守備記錄、手動調整">
+<meta name="description" content="2026 就是棒 U10 秋季聯賽打擊統計系統 — 打擊榜、打者分析、獎項排行、守備記錄、手動調整">
 <meta name="theme-color" content="#005087">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚾</text></svg>">
-<title>2026 就是棒 U8 秋季聯賽｜打擊統計系統</title>
+<title>2026 就是棒 U10 秋季聯賽｜打擊統計系統</title>
+<!-- 外部函式庫：版本已鎖定，確保長期穩定 -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+  // CDN 載入失敗偵測（離線或網路受限時顯示提示）
+  window.addEventListener('load',function(){
+    if(typeof echarts==='undefined'||typeof XLSX==='undefined'){
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#c0392b;color:#fff;text-align:center;padding:10px 16px;font-size:.9rem;">' +
+        '⚠️ 部分功能需要網際網路才能載入（圖表/Excel上傳）。請確認網路連線正常後重新整理頁面。' +
+        '<button onclick="this.parentElement.remove()" style="margin-left:16px;background:rgba(255,255,255,.25);border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;">✕ 關閉</button>' +
+        '</div>');
+    }
+  });
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:"Noto Sans TC",Arial,sans-serif;background:#f0f4f8;color:#222;min-height:100vh;}
@@ -339,13 +352,75 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
 .da-slot{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:46px;padding:5px 0;box-sizing:border-box;}
 .da-slot+.da-slot{border-top:1px dashed #f0d8d8;}
 .defaward-table td{padding:0 10px !important;}
+/* ===== 球隊選擇器 ===== */
+.team-selector-bar{background:#fff;border-radius:12px;padding:14px 20px;box-shadow:0 1px 6px rgba(0,0,0,.08);margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.team-selector-bar .ts-label{font-weight:700;color:#005087;font-size:.92rem;white-space:nowrap;}
+.team-selector-bar .ts-select{padding:8px 14px;border:2px solid #005087;border-radius:8px;font-size:.9rem;color:#222;cursor:pointer;outline:none;min-width:160px;background:#fff;}
+.team-selector-bar .ts-select:focus{box-shadow:0 0 0 3px rgba(0,80,135,.15);}
+.team-chips{display:flex;flex-wrap:wrap;gap:8px;margin-left:4px;}
+.team-chip{padding:6px 16px;border-radius:20px;border:2px solid #ccd6e0;background:#f5f8ff;color:#555;font-size:.84rem;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.team-chip.active{background:#005087;color:#fff;border-color:#005087;box-shadow:0 2px 8px rgba(0,80,135,.25);}
+.team-chip:hover:not(.active){border-color:#005087;color:#005087;background:#eef4fb;}
+.team-chip.all-chip.active{background:linear-gradient(135deg,#005087,#003a63);}
+.team-banner{display:none;background:linear-gradient(135deg,#005087 0%,#003a63 100%);border-radius:10px;padding:10px 18px;margin-bottom:16px;color:#fff;font-size:.9rem;font-weight:600;align-items:center;gap:10px;}
+.team-banner.show{display:flex;}
+.team-banner .tb-name{font-size:1.05rem;font-weight:800;}
+.team-banner .tb-clear{margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:.82rem;transition:background .2s;}
+.team-banner .tb-clear:hover{background:rgba(255,255,255,.35);}
+/* ===== 預設資料頁籤 ===== */
+.defaults-title-box{background:linear-gradient(135deg,#2c3e50 0%,#1a252f 100%);border-radius:12px;padding:18px 24px;margin-bottom:20px;display:flex;align-items:center;gap:14px;}
+.defaults-title-box .at-icon{font-size:2rem;}
+.defaults-title-box .at-text{flex:1;}
+.defaults-title-box .at-text h2{color:#fff;font-size:1.1rem;font-weight:800;margin-bottom:2px;}
+.defaults-title-box .at-text p{color:rgba(255,255,255,.75);font-size:.8rem;}
+.btn-defaults-refresh{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .22s;white-space:nowrap;letter-spacing:.03em;backdrop-filter:blur(4px);}
+.btn-defaults-refresh:hover{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.7);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.25);}
+.btn-defaults-refresh:active{transform:translateY(0);}
+.btn-defaults-refresh.loading{opacity:.7;cursor:not-allowed;pointer-events:none;}
+.btn-defaults-refresh .refresh-icon{display:inline-block;transition:transform .5s;}
+.btn-defaults-refresh.loading .refresh-icon{animation:spin360 .7s linear infinite;}
+@keyframes spin360{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.defaults-refresh-toast{display:none;align-items:center;gap:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 16px;font-size:.85rem;color:#2e7d32;font-weight:600;margin-bottom:14px;}
+.defaults-refresh-toast.show{display:flex;animation:fadeInUp .3s ease;}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.defaults-tab-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.def-section-btn{padding:9px 18px;border:2px solid #d0d8e4;border-radius:8px;background:#f8fafd;color:#555;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.def-section-btn.active{background:#2c3e50;color:#fff;border-color:#2c3e50;}
+.def-section-btn:hover:not(.active){border-color:#2c3e50;color:#2c3e50;background:#f0f4f8;}
+.defaults-section{display:none;}
+.defaults-section.active{display:block;}
+.defaults-panel{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.08);overflow:hidden;margin-bottom:16px;}
+.defaults-panel-hd{background:#2c3e50;color:#fff;padding:12px 18px;font-size:.9rem;font-weight:700;display:flex;align-items:center;gap:10px;}
+.defaults-count-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:.78rem;font-weight:600;margin-left:auto;}
+.defaults-table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:600px;}
+.defaults-table th{background:#34495e;color:#fff;padding:9px 12px;text-align:center;white-space:nowrap;font-weight:700;}
+.defaults-table td{padding:8px 12px;text-align:center;border-bottom:1px solid #f0f2f5;white-space:nowrap;}
+.defaults-table tr:nth-child(even) td{background:#f8f9fa;}
+.defaults-table tr:hover td{background:#eef4fb;}
+.defaults-hit-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;background:#e8f0fa;color:#005087;}
+.defaults-error-badge{background:#fdecea;color:#c0392b;}
+/* ===== 球隊選擇器 ===== */
+.team-selector-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(135deg,#003a63 0%,#005087 100%);border-radius:14px;padding:14px 20px;margin-bottom:20px;box-shadow:0 3px 12px rgba(0,80,135,.25);}
+.tsb-left{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.tsb-icon{font-size:1.5rem;}
+.tsb-label{color:#fff;font-weight:700;font-size:.92rem;white-space:nowrap;}
+.tsb-left select{padding:7px 14px;border:2px solid rgba(255,255,255,.4);border-radius:8px;font-size:.88rem;color:#fff;background:rgba(255,255,255,.12);cursor:pointer;outline:none;backdrop-filter:blur(4px);min-width:200px;}
+.tsb-left select option{color:#222;background:#fff;}
+.tsb-left select:focus{border-color:rgba(255,255,255,.8);}
+.tsb-chips{display:flex;gap:8px;flex-wrap:wrap;flex:1;}
+.team-chip{padding:6px 14px;border:2px solid rgba(255,255,255,.35);border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.team-chip:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.6);}
+.team-chip.active{background:#fff;color:#005087;border-color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.tsb-current{color:rgba(255,255,255,.75);font-size:.82rem;white-space:nowrap;margin-left:auto;}
+.tsb-current strong{color:#fff;}
+.team-filter-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:700;background:#e8f0fa;color:#005087;margin-left:8px;}
 </style>
 </head>
 <body>
 <header>
   <div class="icon">⚾</div>
   <div>
-    <h1>2026 就是棒全國社區棒球秋季聯賽（U8）</h1>
+    <h1>2026 就是棒全國社區棒球秋季聯賽（U10：好棒河馬 & U8：泰山河馬）</h1>
     <p id="header-subtitle">打擊統計分析系統｜共 4 場賽事</p>
   </div>
   <div class="badge" id="header-badge">21 位球員 · 即時統計</div>
@@ -362,12 +437,24 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
   <button onclick="switchTab('defawards',this)">🥊 守備獎項</button>
   <button onclick="switchTab('upload',this)">📁 資料上傳</button>
   <button onclick="switchTab('adjust',this)">⚙️ 手動調整</button>
+  <button onclick="switchTab('defaults',this)">📋 預設資料</button>
 </nav>
 
 <div class="container">
 
 <!-- TAB 1 -->
 <div id="tab-team" class="tab-content active">
+  <!-- ===== 球隊選擇器 ===== -->
+  <div class="team-selector-bar" id="team-selector-bar" style="display:none;">
+    <div class="tsb-left">
+      <span class="tsb-icon">🏟️</span>
+      <span class="tsb-label">球隊篩選</span>
+      <select id="team-select" onchange="selectTeam(this.value)">
+      </select>
+    </div>
+    <div class="tsb-chips" id="team-chips"></div>
+    <div class="tsb-current" id="tsb-current">目前顯示：<strong>全部球隊</strong></div>
+  </div>
   <div class="cards-row" id="team-cards"></div>
   <div class="chart-grid">
     <div class="chart-box full"><h3>📈 各場次打擊趨勢</h3><div class="chart-area tall" id="chart-team-avg"></div></div>
@@ -733,6 +820,98 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
 
 </div>
 
+<!-- TAB: 預設資料 -->
+<div id="tab-defaults" class="tab-content">
+  <div class="defaults-title-box">
+    <div class="at-icon">📋</div>
+    <div class="at-text">
+      <h2>預設資料 — 系統內建數據總覽</h2>
+      <p>顯示目前系統中正在使用的 PLAYERS、TEAM_GAMES、BATTING_DATA 及 DEFENSE_DATA 即時資料</p>
+    </div>
+    <button class="btn-defaults-refresh" id="btn-defaults-refresh" onclick="refreshDefaultsData()">
+      <span class="refresh-icon">🔄</span> 即時查詢
+    </button>
+  </div>
+  <!-- 查詢成功提示 -->
+  <div class="defaults-refresh-toast" id="defaults-refresh-toast">
+    ✅ 已成功同步最新系統資料！球員 <strong id="toast-players-cnt"></strong> 位・場次 <strong id="toast-games-cnt"></strong> 場・打席 <strong id="toast-batting-cnt"></strong> 筆・守備 <strong id="toast-defense-cnt"></strong> 筆
+  </div>
+
+  <!-- 切換區塊按鈕 -->
+  <div class="defaults-tab-bar">
+    <button class="def-section-btn active" onclick="switchDefaultSection('players',this)">👥 球員名單</button>
+    <button class="def-section-btn" onclick="switchDefaultSection('teamgames',this)">📊 場次摘要</button>
+    <button class="def-section-btn" onclick="switchDefaultSection('batting',this)">⚾ 打擊記錄</button>
+    <button class="def-section-btn" onclick="switchDefaultSection('defense',this)">🛡️ 守備記錄</button>
+  </div>
+
+  <!-- 球員名單 -->
+  <div id="defaults-players" class="defaults-section active">
+    <div class="defaults-panel">
+      <div class="defaults-panel-hd">👥 球員名單（PLAYERS）<span id="defaults-players-count" class="defaults-count-badge"></span></div>
+      <div style="overflow-x:auto;">
+        <table class="defaults-table" id="defaults-players-table">
+          <thead><tr>
+            <th>背號</th><th>姓名</th>
+            <th>場1 AB/H/BB/K</th><th>場2 AB/H/BB/K</th>
+            <th>場3 AB/H/BB/K</th><th>場4 AB/H/BB/K</th>
+            <th>場5 AB/H/BB/K</th><th>場6 AB/H/BB/K</th>
+          </tr></thead>
+          <tbody id="defaults-players-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 場次摘要 -->
+  <div id="defaults-teamgames" class="defaults-section">
+    <div class="defaults-panel">
+      <div class="defaults-panel-hd">📊 場次摘要（TEAM_GAMES）<span id="defaults-teamgames-count" class="defaults-count-badge"></span></div>
+      <div style="overflow-x:auto;">
+        <table class="defaults-table" id="defaults-teamgames-table">
+          <thead><tr>
+            <th>場次</th><th>打數 AB</th><th>安打 H</th><th>保送 BB</th><th>三振 K</th>
+            <th>打點 RBI</th><th>得分 R</th><th>一壘打</th><th>二壘打</th><th>三壘打</th><th>全壘打</th>
+            <th>AVG</th><th>OBP</th><th>SLG</th>
+          </tr></thead>
+          <tbody id="defaults-teamgames-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 打擊記錄 -->
+  <div id="defaults-batting" class="defaults-section">
+    <div class="defaults-panel">
+      <div class="defaults-panel-hd">⚾ 逐打席明細（BATTING_DATA）<span id="defaults-batting-count" class="defaults-count-badge"></span></div>
+      <div style="overflow-x:auto;">
+        <table class="defaults-table" id="defaults-batting-table">
+          <thead><tr>
+            <th>場次</th><th>對手</th><th>打序</th><th>局次</th><th>背號</th><th>姓名</th><th>打席內容</th><th>打點 RBI</th><th>得分 R</th>
+          </tr></thead>
+          <tbody id="defaults-batting-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 守備記錄 -->
+  <div id="defaults-defense" class="defaults-section">
+    <div class="defaults-panel">
+      <div class="defaults-panel-hd">🛡️ 守備明細（DEFENSE_DATA）<span id="defaults-defense-count" class="defaults-count-badge"></span></div>
+      <div style="overflow-x:auto;">
+        <table class="defaults-table" id="defaults-defense-table">
+          <thead><tr>
+            <th>場次</th><th>對手</th><th>打序</th><th>局次</th><th>背號</th><th>姓名</th><th>守備位置</th><th>失誤</th><th>守備內容</th>
+          </tr></thead>
+          <tbody id="defaults-defense-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- TAB 5: 資料上傳 -->
 <div id="tab-upload" class="tab-content">
   <div class="upload-sec">
@@ -800,33 +979,47 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
 <script>
 // ===== DATA =====
 const PLAYERS = [
-  {no:8,  name:'何天浩', games:[[0,0,0,0,0,0,0,0,0,0],[3,2,0,1,0,2,1,0,1,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:9,  name:'蕭沛庭', games:[[2,2,1,0,1,3,1,0,0,1],[2,2,1,0,1,3,1,0,0,1],[2,1,1,1,0,2,0,0,1,0],[2,0,0,0,0,0,0,0,0,0]]},
-  {no:15, name:'陳冠安', games:[[2,1,1,1,1,2,0,0,1,0],[2,0,0,1,0,0,0,0,0,0],[1,0,1,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0]]},
-  {no:23, name:'鄭琮岳', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:26, name:'莊閔程', games:[[1,0,0,1,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0]]},
-  {no:28, name:'盧冠昇', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:34, name:'劉禹樂', games:[[2,1,1,0,2,2,0,0,0,1],[2,0,0,1,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:35, name:'林賴奇', games:[[0,0,0,0,0,0,0,0,0,0],[1,1,0,0,1,1,1,0,0,0],[0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:39, name:'黃宇謙', games:[[2,1,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:42, name:'林守柏', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,1,1,0,0,0,1,0,0,0],[1,1,0,0,0,0,1,0,0,0]]},
-  {no:50, name:'陳昱瑄', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[3,2,0,0,3,2,1,0,0,1],[1,0,0,0,0,0,0,0,0,0]]},
-  {no:64, name:'黃晨睿', games:[[2,0,1,0,0,2,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,1,2,0,2,2,0,0,0,1],[2,1,0,0,0,0,1,0,0,0]]},
-  {no:72, name:'張世昀', games:[[2,0,0,0,1,0,0,0,0,0],[2,0,0,2,0,0,0,0,0,0],[1,0,1,1,0,1,0,0,0,0],[0,0,1,0,0,0,0,0,0,0]]},
-  {no:73, name:'陳亦捷', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:74, name:'劉禹霆', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:77, name:'林承熙', games:[[1,0,0,1,0,0,0,0,0,0],[1,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,1,0,0,0]]},
-  {no:81, name:'陳柏呈', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[2,0,0,1,0,0,0,0,0,0],[2,1,0,0,0,0,1,0,0,0]]},
-  {no:82, name:'鄞圻睿', games:[[2,1,1,0,0,2,1,0,0,0],[3,2,0,0,2,0,2,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
-  {no:83, name:'陳俊希', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0]]},
-  {no:98, name:'朱彥宇', games:[[3,2,0,0,1,2,1,1,0,0],[3,2,0,0,2,3,1,1,0,0],[3,1,0,0,3,3,0,0,0,1],[2,0,0,0,0,0,0,0,0,0]]},
-  {no:99, name:'張郁晨', games:[[2,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,1,0,0,0,0],[0,0,1,0,0,1,0,0,0,0],[1,0,0,1,0,0,0,0,0,0]]}
+  {no:8,  name:'何天浩', games:[[0,0,0,0,0,0,0,0,0,0],[3,2,0,1,0,2,1,0,1,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[2,0,0,1,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:9,  name:'蕭沛庭', games:[[2,2,1,0,1,3,1,0,0,1],[2,2,1,0,1,3,1,0,0,1],[2,1,1,1,0,2,0,0,1,0],[2,0,0,0,0,0,0,0,0,0],[2,1,0,1,2,1,0,0,1,0],[2,1,1,0,0,2,1,0,0,0]]},
+  {no:15, name:'陳冠安', games:[[2,1,1,1,1,2,0,0,1,0],[2,0,0,1,0,0,0,0,0,0],[1,0,1,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0]]},
+  {no:23, name:'鄭琮岳', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:26, name:'莊閔程', games:[[1,0,0,1,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0,0]]},
+  {no:28, name:'盧冠昇', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:34, name:'劉禹樂', games:[[2,1,1,0,2,2,0,0,0,1],[2,0,0,1,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[3,1,0,1,1,1,0,0,1,0]]},
+  {no:35, name:'林賴奇', games:[[0,0,0,0,0,0,0,0,0,0],[1,1,0,0,1,1,1,0,0,0],[0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[2,0,0,2,0,0,0,0,0,0]]},
+  {no:39, name:'黃宇謙', games:[[2,1,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:42, name:'林守柏', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,1,1,0,0,0,1,0,0,0],[1,1,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:50, name:'陳昱瑄', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[3,2,0,0,3,2,1,0,0,1],[1,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[2,1,0,0,2,0,0,0,1,0]]},
+  {no:64, name:'黃晨睿', games:[[2,0,1,0,0,2,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,1,2,0,2,2,0,0,0,1],[2,1,0,0,0,0,1,0,0,0],[1,1,1,0,0,2,0,1,0,0],[1,0,0,0,0,0,0,0,0,0]]},
+  {no:72, name:'張世昀', games:[[2,0,0,0,1,0,0,0,0,0],[2,0,0,2,0,0,0,0,0,0],[1,0,1,1,0,1,0,0,0,0],[0,0,1,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,1,0,0,0]]},
+  {no:73, name:'陳亦捷', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:74, name:'劉禹霆', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:77, name:'林承熙', games:[[1,0,0,1,0,0,0,0,0,0],[1,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,1,0,0,0,0,1,0,0,0],[1,0,0,1,0,0,0,0,0,0],[2,0,0,0,0,0,0,0,0,0]]},
+  {no:81, name:'陳柏呈', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[2,0,0,1,0,0,0,0,0,0],[2,1,0,0,0,0,1,0,0,0],[1,0,0,0,0,1,0,0,0,0],[3,1,0,0,0,0,1,0,0,0]]},
+  {no:82, name:'鄞圻睿', games:[[2,1,1,0,0,2,1,0,0,0],[3,2,0,0,2,0,2,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[2,0,0,2,0,0,0,0,0,0],[2,0,0,1,0,0,0,0,0,0]]},
+  {no:83, name:'陳俊希', games:[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]},
+  {no:98, name:'朱彥宇', games:[[3,2,0,0,1,2,1,1,0,0],[3,2,0,0,2,3,1,1,0,0],[3,1,0,0,3,3,0,0,0,1],[2,0,0,0,0,0,0,0,0,0],[2,2,0,0,1,1,2,0,0,0],[3,0,0,1,0,1,0,0,0,0]]},
+  {no:99, name:'張郁晨', games:[[2,0,0,0,0,0,0,0,0,0],[1,0,0,1,0,1,0,0,0,0],[0,0,1,0,0,1,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[1,0,0,1,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0]]},
+  // ===== U8 泰山河馬 =====
+  {no:6,  name:'陳曄',   team:'泰山河馬', games:[]},
+  {no:9,  name:'張郁晨', team:'泰山河馬', games:[]},
+  {no:15, name:'陳冠安', team:'泰山河馬', games:[]},
+  {no:17, name:'楊定侖', team:'泰山河馬', games:[]},
+  {no:18, name:'許少澄', team:'泰山河馬', games:[]},
+  {no:23, name:'吳倚墨', team:'泰山河馬', games:[]},
+  {no:26, name:'葉羿頡', team:'泰山河馬', games:[]},
+  {no:65, name:'陳豫澄', team:'泰山河馬', games:[]},
+  {no:91, name:'林倬安', team:'泰山河馬', games:[]},
+  {no:98, name:'朱彥宇', team:'泰山河馬', games:[]},
+  {no:99, name:'盧洆言', team:'泰山河馬', games:[]}
 ];
 const TEAM_GAMES = [
   {label:'#1',ab:21,h:8,bb:5,k:3,rbi:6,r:13,b1:3,b2:2,b3:1,hr:2,avg:0.381,obp:0.500,slg:0.857},
   {label:'#2',ab:21,h:9,bb:2,k:7,rbi:6,r:11,b1:6,b2:1,b3:1,hr:1,avg:0.429,obp:0.478,slg:0.714},
   {label:'#3',ab:15,h:6,bb:8,k:4,rbi:8,r:11,b1:2,b2:0,b3:1,hr:3,avg:0.400,obp:0.609,slg:1.133},
-  {label:'#4',ab:15,h:4,bb:1,k:1,rbi:0,r:0, b1:4,b2:0,b3:0,hr:0,avg:0.267,obp:0.313,slg:0.267}
+  {label:'#4',ab:15,h:4,bb:1,k:1,rbi:0,r:0, b1:4,b2:0,b3:0,hr:0,avg:0.267,obp:0.313,slg:0.267},
+  {label:'#5',ab:18,h:4,bb:1,k:10,rbi:3,r:7, b1:2,b2:1,b3:1,hr:0,avg:0.222,obp:0.263,slg:0.389},
+  {label:'#6',ab:23,h:5,bb:1,k:7, rbi:3,r:7, b1:3,b2:0,b3:2,hr:0,avg:0.217,obp:0.250,slg:0.391}
 ];
 const HIT_COLORS=['#5B9BD5','#70AD47','#FFC000','#FF4500'];
 const HIT_LABELS=['一壘打','二壘打','三壘打','全壘打'];
@@ -846,9 +1039,20 @@ const IS_HIT=c=>['1B','1B_內','2B','3B','HR','HR_內'].includes(c);
 // SF/SAC 犧牲打不計打數；PR 代跑不計打數；其餘（含 GO/FO/K/E_內/E_外/FC/DP 等）都計打數
 const IS_AB =c=>c!==''&&c!=='BB'&&c!=='HP'&&c!=='SF'&&c!=='SAC'&&c!=='PR'&&c!=='犧牲飛球'&&c!=='犧牲觸擊'&&c!=='犧牲';
 
-// 計算單一球員累積數據（從 BATTING_DATA）
-function calcPlayerStats(no){
-  const rows=BATTING_DATA.filter(d=>d.no===no);
+// 計算單一球員累積數據（從 filtered BATTING_DATA）
+// playerTeam: 若傳入，則同時比對 team（避免跨球隊同名混算）
+function calcPlayerStats(no, playerName, playerTeam){
+  // getFilteredBattingData() 已依 currentTeam 篩選好，不需再二次過濾 team
+  // playerTeam 僅在多球隊同名球員時用於區分，避免跨隊混算
+  const rows=getFilteredBattingData().filter(d=>{
+    if(playerName){
+      if(d.name!==playerName) return false;
+      // 若傳入 playerTeam，且資料有 team 欄位，則嚴格比對（跨球隊同名區分）
+      if(playerTeam && d.team && d.team!==playerTeam) return false;
+      return true;
+    }
+    return d.no===no;
+  });
   let ab=0,h=0,bb=0,hp=0,k=0,rbi=0,r=0,b1=0,b2=0,b3=0,hr=0;
   rows.forEach(d=>{
     const c=d.content||'';
@@ -872,9 +1076,21 @@ function calcPlayerStats(no){
 }
 
 // 計算單一球員各場次數據
-function calcPlayerGameStats(no){
-  const games=TEAM_GAMES.map((_,gi)=>{
-    const rows=BATTING_DATA.filter(d=>d.no===no&&d.game===(gi+1));
+// playerTeam: 同步支持 team 識別
+function calcPlayerGameStats(no, playerName, playerTeam){
+  // getFilteredBattingData() 已依 currentTeam 篩選好，不需再二次過濾 team
+  const fbd=getFilteredBattingData().filter(d=>{
+    if(playerName){
+      if(d.name!==playerName) return false;
+      // 若傳入 playerTeam，且資料有 team 欄位，則嚴格比對（跨球隊同名區分）
+      if(playerTeam && d.team && d.team!==playerTeam) return false;
+      return true;
+    }
+    return d.no===no;
+  });
+  const gs=calcTeamGameStats(); // 已是 filtered 的場次列表
+  return gs.map(g=>{
+    const rows=fbd.filter(d=>d.game===g.gameNum);
     let ab=0,h=0,bb=0,hp=0,k=0,rbi=0,r=0,b1=0,b2=0,b3=0,hr=0;
     rows.forEach(d=>{
       const c=d.content||'';
@@ -891,13 +1107,17 @@ function calcPlayerGameStats(no){
     });
     return {ab,h,bb,hp,k,rbi,r,b1,b2,b3,hr};
   });
-  return games;
 }
 
 // 計算全隊各場次數據（從 BATTING_DATA）
 function calcTeamGameStats(){
-  return TEAM_GAMES.map((_,gi)=>{
-    const rows=BATTING_DATA.filter(d=>d.game===(gi+1));
+  const bd=getFilteredBattingData();
+  const gameNums=[...new Set(bd.map(d=>d.game))].sort((a,b)=>a-b);
+  if(!gameNums.length) return [];
+  return gameNums.map((gNum,idx)=>{
+    const rows=bd.filter(d=>d.game===gNum);
+    // 以篩選後的第幾場（1-based）作為 x 軸標籤，避免跨球隊 game 編號錯位
+    const label=`#${idx+1}`;
     let ab=0,h=0,bb=0,hp=0,k=0,rbi=0,r=0,b1=0,b2=0,b3=0,hr=0;
     rows.forEach(d=>{
       const c=d.content||'';
@@ -917,7 +1137,7 @@ function calcTeamGameStats(){
     const tb=b1+b2*2+b3*3+hr*4;
     const slg=ab>0?tb/ab:null;
     const ops=(obp!==null&&slg!==null)?obp+slg:null;
-    return {label:TEAM_GAMES[gi].label,ab,h,bb,hp,k,rbi,r,b1,b2,b3,hr,avg:avg_v,obp,slg,ops};
+    return {label,gameNum:gNum,ab,h,bb,hp,k,rbi,r,b1,b2,b3,hr,avg:avg_v,obp,slg,ops};
   });
 }
 
@@ -950,10 +1170,13 @@ function renderTeam(){
   const cumTB =cumB1+cumB2*2+cumB3*3+cumHR*4;
   const cumSLG=cumAB>0?+(cumTB/cumAB).toFixed(3):0;
   const cumOPS=+(cumOBP+cumSLG).toFixed(3);
-  const numG=TEAM_GAMES.length;
+  const numG=gs.length;
   const xLabels=[...gs.map(g=>g.label),'累積'];
-  document.getElementById('header-subtitle').textContent=`打擊統計分析系統｜共 ${numG} 場賽事`;
-  document.getElementById('header-badge').textContent=`${PLAYERS.length} 位球員 · 即時統計`;
+  // 更新球隊選擇器後再更新 header
+  const filteredPlayers=currentTeam?[...new Set(getFilteredBattingData().map(d=>d.no))].length:PLAYERS.length;
+  const teamLabel=currentTeam?`《${currentTeam}》`:'全部球隊';
+  document.getElementById('header-subtitle').textContent=`打擊統計分析系統｜${teamLabel} 共 ${numG} 場賽事`;
+  document.getElementById('header-badge').textContent=`${filteredPlayers} 位球員 · ${teamLabel}`;
   document.getElementById('team-cards').innerHTML=[
     `<div class="card blue"><div class="label">全隊累積安打</div><div class="value">${cumH}</div><div class="sub">打數 ${cumAB} 次</div></div>`,
     `<div class="card green"><div class="label">全隊打擊率</div><div class="value">${cumAVG.toFixed(3)}</div><div class="sub">得分 ${cumR} 分</div></div>`,
@@ -1029,26 +1252,36 @@ function buildPlayerSelect(){
   const optAll=document.createElement('option');
   optAll.value=-1; optAll.textContent='⚾ 全隊累積';
   sel.appendChild(optAll);
-  PLAYERS.forEach(p=>{
-    // 下拉選單統計也改從 BATTING_DATA 計算
-    const c=calcPlayerStats(p.no);
+  // ★ 修正：依 currentTeam 篩選球員，好棒河馬球員無 team 欄位（視為好棒河馬）
+  const filteredPlayers = PLAYERS.filter(p=>{
+    if(!currentTeam || currentTeam==='好棒河馬') return !p.team || p.team==='好棒河馬';
+    return p.team === currentTeam;
+  });
+  filteredPlayers.forEach(p=>{
+    // 下拉選單統計改從 BATTING_DATA 計算，同時傳入 team 避免同名混算
+    const c=calcPlayerStats(p.no, p.name, p.team);
+    if(c.ab===0) return; // ★ 打數=0 者不顯示於球員個人下拉選單
     const opt=document.createElement('option');
-    opt.value=p.no;
-    opt.textContent=`#${p.no} ${p.name}  (${c.ab}AB / ${c.h}H / ${fmtAvg(c.avg)})`;
+    // ★ value 改為 name|||team 格式，支持同名不同隊的區分
+    opt.value=`${p.name}|||${p.team||''}`;
+    const teamLabel=p.team?` [${p.team}]`:'';
+    opt.textContent=`#${p.no} ${p.name}${teamLabel}  (${c.ab}AB / ${c.h}H / ${fmtAvg(c.avg)})`;
     sel.appendChild(opt);
   });
 }
 function renderPlayerChart(){
   const selVal=document.getElementById('player-select').value;
   if(parseInt(selVal)===-1){renderTeamCumulative();return;}
-  const no=parseInt(selVal);
-  const p=PLAYERS.find(x=>x.no===no);
+  // ★ selVal 格式為 "name|||team"  
+  const [pName, pTeam]=selVal.split('|||');
+  const p=PLAYERS.find(x=>x.name===pName && (x.team||'')===(pTeam||''));
   if(!p)return;
   // 全部從 BATTING_DATA 計算，與打擊記錄完全同步
-  const c=calcPlayerStats(no);
-  const gs=calcPlayerGameStats(no); // 各場數據
-  const numGames=TEAM_GAMES.length;
-  const xData=[...TEAM_GAMES.map(g=>g.label),'累積'];
+  const c=calcPlayerStats(p.no, p.name, p.team);
+  const gs=calcPlayerGameStats(p.no, p.name, p.team); // 各場數據（已依球隊篩選）
+  const filteredGameStats=calcTeamGameStats(); // ★ 取得篩選後的場次標籤
+  const numGames=filteredGameStats.length; // ★ 用篩選後的實際場次數
+  const xData=[...filteredGameStats.map(g=>g.label),'累積']; // ★ x 軸標籤與篩選同步
   document.getElementById('player-stat-cards').innerHTML=[
     `<div class="stat-card"><div class="s-label">打數</div><div class="s-val">${c.ab}</div></div>`,
     `<div class="stat-card"><div class="s-label">安打</div><div class="s-val">${c.h}</div></div>`,
@@ -1091,18 +1324,27 @@ function renderPlayerChart(){
        connectNulls:false,label:{show:true,fontSize:11,color:'#e67e22',
        formatter:p=>p.value!==null&&p.value!==undefined?Number(p.value).toFixed(3):''}},
       {name:'累積打擊率',type:'scatter',yAxisIndex:1,
-       data:cumAvg!==null?[[numGames,+cumAvg.toFixed(3)]]:[],
+       data:cumAvg!==null?[[filteredGameStats.length,+cumAvg.toFixed(3)]]:[],
        symbol:'diamond',symbolSize:16,itemStyle:{color:'#c0392b'},
        label:{show:true,position:'top',formatter:p=>Number(p.value[1]).toFixed(3),fontSize:12,color:'#c0392b',fontWeight:'bold'}}
     ]
   });
   // ===== 個人守備圖表（呈現方式比照全隊累積）=====
   const defSection=document.getElementById('player-def-section');
-  const playerDefData=DEFENSE_DATA.filter(d=>d.no===no);
+  // ★ 守備數據同樣加入 team 識別，避免同名不同隊混算
+  // getFilteredDefenseData() 已依 currentTeam 篩選好，只需再比對姓名
+  const playerDefData=getFilteredDefenseData().filter(d=>{
+    if(d.name!==p.name) return false;
+    // 若球員有 team 欄位，且守備資料有 team 欄位，則嚴格比對（跨球隊同名區分）
+    if(p.team && d.team && d.team!==p.team) return false;
+    return true;
+  });
   if(defSection) defSection.style.display='';
   {
-    const gameKeys=Object.keys(GAME_LABELS).map(Number).sort((a,b)=>a-b);
-    const defXLabels=[...gameKeys.map(g=>GAME_LABELS[g]),'累積'];
+    // ★ 修正：x 軸只取篩選後該球員實際有守備記錄的場次，用相對順序顯示（避免 game 7~10 顯示為第7~10場）
+    const filteredDefGames=[...new Set(getFilteredDefenseData().map(d=>d.game))].sort((a,b)=>a-b);
+    const gameKeys=filteredDefGames;
+    const defXLabels=[...gameKeys.map((_g,idx)=>`第${idx+1}場`),'累積'];
     const pDefTotalArr=gameKeys.map(g=>playerDefData.filter(d=>d.game===g).length);
     const pDefErrArr  =gameKeys.map(g=>playerDefData.filter(d=>d.game===g&&d.isError).length);
     const pDefOutArr  =pDefTotalArr.map((t,i)=>t-pDefErrArr[i]);
@@ -1175,10 +1417,10 @@ function renderTeamCumulative(){
     `<div class="stat-card"><div class="s-label">全隊保送</div><div class="s-val">${totBB}</div></div>`,
     `<div class="stat-card"><div class="s-label">全隊三振</div><div class="s-val">${totK}</div></div>`,
     `<div class="stat-card"><div class="s-label">全隊全壘打</div><div class="s-val" style="color:#e74c3c">${totHR}</div></div>`,
-    `<div class="stat-card"><div class="s-label">參賽場次</div><div class="s-val">${TEAM_GAMES.length}</div></div>`
+    `<div class="stat-card"><div class="s-label">參賽場次</div><div class="s-val">${gs.length}</div></div>`
   ].join('');
   document.getElementById('player-chart-title').textContent='⚾ 全隊累積 — 各場次打擊數據總覽';
-  const numGames=TEAM_GAMES.length;
+  const numGames=gs.length; // ★ 用篩選後的實際場次數，而非靜態 TEAM_GAMES
   const xData=[...gs.map(g=>g.label),'累積'];
   const abArr=[...gs.map(g=>g.ab),totAB];
   const b1Arr=[...gs.map(g=>g.b1),totB1];
@@ -1204,7 +1446,7 @@ function renderTeamCumulative(){
        symbol:'circle',symbolSize:9,lineStyle:{color:'#e67e22',width:2.5},itemStyle:{color:'#e67e22'},
        connectNulls:false,label:{show:true,fontSize:11,color:'#e67e22',formatter:p=>p.value!==null&&p.value!==undefined?Number(p.value).toFixed(3):''}},
       {name:'全隊累積打擊率',type:'scatter',yAxisIndex:1,
-       data:teamAVG!==null?[[numGames,+teamAVG.toFixed(3)]]:[],
+       data:teamAVG!==null?[[gs.length,+teamAVG.toFixed(3)]]:[],
        symbol:'diamond',symbolSize:18,itemStyle:{color:'#c0392b'},
        label:{show:true,position:'top',formatter:p=>Number(p.value[1]).toFixed(3),fontSize:13,color:'#c0392b',fontWeight:'bold'}}
     ]
@@ -1216,14 +1458,17 @@ function renderTeamDefChart(title){
   // 顯示守備圖表區塊
   const defSection=document.getElementById('player-def-section');
   if(defSection) defSection.style.display='';
-  // 計算各場次守備數量
-  const gameKeys=Object.keys(GAME_LABELS).map(Number).sort((a,b)=>a-b);
-  const defXLabels=[...gameKeys.map(g=>GAME_LABELS[g]),'累積'];
-  const defErrArr=gameKeys.map(g=>DEFENSE_DATA.filter(d=>d.game===g&&d.isError).length);
-  const defOutArr=gameKeys.map(g=>DEFENSE_DATA.filter(d=>d.game===g&&!d.isError).length);
+  // 計算各場次守備數量（依球隊篩選）
+  const fdd2=getFilteredDefenseData();
+  // ★ 修正：x 軸只取篩選後球隊實際出現的場次，用相對順序（第1場、第2場…）顯示
+  // 避免跨球隊 game 編號錯位（好棒河馬 1~6，泰山河馬 7~10 → 應顯示為第1~4場）
+  const gameKeys=[...new Set(fdd2.map(d=>d.game))].sort((a,b)=>a-b);
+  const defXLabels=[...gameKeys.map((_g,idx)=>`第${idx+1}場`),'累積'];
+  const defErrArr=gameKeys.map(g=>fdd2.filter(d=>d.game===g&&d.isError).length);
+  const defOutArr=gameKeys.map(g=>fdd2.filter(d=>d.game===g&&!d.isError).length);
   const defTotalArr=gameKeys.map((g,i)=>defOutArr[i]+defErrArr[i]);
-  const cumDef=DEFENSE_DATA.length;
-  const cumDefErr=DEFENSE_DATA.filter(d=>d.isError).length;
+  const cumDef=fdd2.length;
+  const cumDefErr=fdd2.filter(d=>d.isError).length;
   const cumDefOut=cumDef-cumDefErr;
   // 各場守備率（0~1，無守備機會為 null）
   const defRateArr=defTotalArr.map((tot,i)=>tot>0?+((defOutArr[i]/tot).toFixed(3)):null);
@@ -1276,9 +1521,25 @@ const COLS=[
 function buildTableData(){
   // 資料來源改為從 BATTING_DATA 動態計算，與「打擊記錄統計彙整」完全一致
   // 使用全域 IS_HIT / IS_AB 確保邏輯完全一致（SF/SAC/空字串均不計打數）
-  // 以 PLAYERS 為基準（保留完整球員名單含出賽0次者），再疊加 BATTING_DATA
-  return PLAYERS.map(p=>{
-    const rows=BATTING_DATA.filter(d=>d.no===p.no);
+  // ★ 修正：先依 currentTeam 篩選 PLAYERS，再計算（避免跨球隊同名球員混算）
+  const fbd=getFilteredBattingData();
+  // 依目前球隊篩選 PLAYERS：好棒河馬球員無 team 欄位，泰山有 team 欄位
+  const filteredPlayers=PLAYERS.filter(p=>{
+    if(!currentTeam || currentTeam==='好棒河馬') return !p.team || p.team==='好棒河馬';
+    return p.team===currentTeam;
+  });
+  return filteredPlayers.map(p=>{
+    // ★ 嚴格 name+team 雙重比對，避免跨球隊同名球員混算
+    // 好棒球員(p.team=undefined)：只匹配無 team 或 team='好棒河馬' 的打席
+    // 泰山球員(p.team='泰山河馬')：只匹配 team='泰山河馬' 的打席
+    const rows=fbd.filter(d=>{
+      if(d.name!==p.name) return false;
+      // 嚴格 team 比對：兩邊都正規化後比對
+      const pTeam=p.team||'好棒河馬';
+      const dTeam=d.team||'好棒河馬';
+      if(pTeam!==dTeam) return false;
+      return true;
+    });
     let ab=0,h=0,bb=0,hp=0,k=0,rbi=0,r=0,b1=0,b2=0,b3=0,hr=0;
     rows.forEach(d=>{
       const c=d.content||'';
@@ -1297,7 +1558,7 @@ function buildTableData(){
     const sf_cnt=0; // 高飛犧牲打(SF)，目前系統無此數據
     const obp=(ab+bb+hp+sf_cnt)>0?(h+bb+hp)/(ab+bb+hp+sf_cnt):null;
     return {no:p.no,name:p.name,ab,h,avg:a,obp,bb,hp,k,rbi,r,b1,b2,b3,hr};
-  });
+  }).filter(d=>d.ab>0); // ★ 打數=0 者不顯示於打擊排行
 }
 function renderTable(data){
   const thead=document.querySelector('#ranking-table thead');
@@ -1336,7 +1597,8 @@ function filterTable(){
   renderTable(tableData.filter(d=>!q||d.name.includes(q)||String(d.no).includes(q)));
 }
 function renderRankingCharts(){
-  const minAB_rank=TEAM_GAMES.length*2;
+  const filteredGames=calcTeamGameStats(); // ★ 依球隊篩選後的實際場次
+  const minAB_rank=filteredGames.length*2; // ★ 門檻改用篩選後場次數
   const eligibleAvg=tableData.filter(d=>d.ab>=minAB_rank&&d.avg!==null).sort((a,b)=>b.avg-a.avg).slice(0,10);
   const cAvg=getChart('chart-rank-avg');
   cAvg.setOption({tooltip:{trigger:'axis'},
@@ -1346,7 +1608,7 @@ function renderRankingCharts(){
       itemStyle:{color:'#005087'},label:{show:true,position:'right',formatter:'{c}'}}]});
   // 更新資格門檻說明
   const el=document.getElementById('rank-avg-footnote');
-  if(el) el.textContent=`※ 資格門檻：累積打數 ≥ ${TEAM_GAMES.length} 場 × 2 = ${minAB_rank} 打數`;
+  if(el) el.textContent=`※ 資格門檻：累積打數 ≥ ${filteredGames.length} 場 × 2 = ${minAB_rank} 打數`;
   const topH=[...tableData].sort((a,b)=>b.h-a.h).slice(0,10);
   const cH=getChart('chart-rank-hits');
   cH.setOption({tooltip:{trigger:'axis'},
@@ -1475,18 +1737,30 @@ function parseUploadedData(rows,fname){
 }
 
 function parseNewFormat(rows,fname){
-  // Step1: 定位含「賽程」的標題行
-  let headerRowIdx=-1;
+  // Step1: 定位標題行
+  // Excel 可能有雙層標題：
+  //   Row A（大類）= 合併儲存格，如「賽程」「打擊球員-背號」→ B/C/D/E 欄為空
+  //   Row B（子標題）= 「賽程」「場次」「出賽球隊」「打序」「1局」「2局」...
+  // 我們需要找到同時含有「場次」的那一行作為實際操作標題行（h1）
+  let headerRowIdx=-1;   // 含「賽程」的首個 row index（大類標題或子標題）
+  let subHeaderRowIdx=-1; // 含「場次」的 row index（真正的欄位標題行）
   for(let i=0;i<Math.min(rows.length,5);i++){
-    if(rows[i]&&rows[i].some(c=>String(c||'').trim()==='賽程')){ headerRowIdx=i; break; }
+    const row=rows[i];
+    if(!row) continue;
+    const vals=row.map(c=>String(c||'').trim());
+    if(vals.includes('賽程') && headerRowIdx<0) headerRowIdx=i;
+    if(vals.includes('場次') && vals.includes('打序') && subHeaderRowIdx<0) subHeaderRowIdx=i;
   }
-  if(headerRowIdx<0){showUploadMsg('error','❌ 找不到「賽程」標題行，請確認格式');return;}
+  // 若大類標題行與欄位標題行不同（雙層），以欄位標題行（subHeaderRowIdx）為主
+  if(subHeaderRowIdx<0) subHeaderRowIdx=headerRowIdx;
+  if(subHeaderRowIdx<0){showUploadMsg('error','❌ 找不到含「場次」「打序」的標題行，請確認格式');return;}
 
-  const h1=rows[headerRowIdx].map(c=>String(c||'').trim());
-  const h0=headerRowIdx>0?rows[headerRowIdx-1].map(c=>String(c||'').trim()):[];
+  const h1=rows[subHeaderRowIdx].map(c=>String(c||'').trim()); // 欄位標題行
+  const h0=subHeaderRowIdx>0?rows[subHeaderRowIdx-1].map(c=>String(c||'').trim()):[];
 
-  // Step2: 從標題行找固定欄
+  // Step2: 從欄位標題行找固定欄
   const colGame=h1.findIndex(v=>v==='場次');
+  const colTeam=h1.findIndex(v=>v==='出賽球隊'||v==='球隊');
   const colSeq =h1.findIndex(v=>v==='打序'||v==='棒序');
   if(colGame<0||colSeq<0){
     showUploadMsg('error',`❌ 標題行找不到「場次」或「打序」欄。偵測到的欄位：${h1.filter(v=>v).join('、')}`);
@@ -1529,9 +1803,10 @@ function parseNewFormat(rows,fname){
 
   // Step5: 解析資料列（強化版：直接用 String() 轉換，不用 || 避免 0 被視為 falsy）
   const bdMap={};
-  let lastSeq=0; // 記憶最近一次有效打序，處理合併儲存格造成空白的情況
-  let lastGm=0;  // 記憶最近一次有效場次，換場時重置 lastSeq
-  for(let r=headerRowIdx+1;r<rows.length;r++){
+  let lastSeq=0;  // 記憶最近一次有效打序，處理合併儲存格造成空白的情況
+  let lastGm=0;   // 記憶最近一次有效場次，換場時重置 lastSeq
+  let lastTeam=''; // 記憶最近一次有效球隊名稱（合併儲存格時沿用）
+  for(let r=subHeaderRowIdx+1;r<rows.length;r++){
     const row=rows[r];
     if(!row) continue;
     // 判斷是否為全空列（只看前10欄）
@@ -1539,6 +1814,8 @@ function parseNewFormat(rows,fname){
     if(isEmptyRow) continue;
     const gmStr=String(row[colGame]===undefined||row[colGame]===''?'':row[colGame]).trim();
     const gm=parseInt(gmStr.replace(/[^0-9]/g,''))||0; // 支援 "#1" "第1場" 等格式
+    const teamVal=colTeam>=0?String(row[colTeam]===undefined||row[colTeam]===''?'':row[colTeam]).trim():'';
+    if(teamVal) lastTeam=teamVal; // 合併儲存格時沿用上一列的球隊
     const seqStr=String(row[colSeq]===undefined||row[colSeq]===''?'':row[colSeq]).trim();
     // 強化解析：先抽取純數字（支援「第1棒」「1棒」「1st」等格式），與 gm 解析方式一致
     const seqParsed=parseInt(seqStr.replace(/[^0-9]/g,''))||0;
@@ -1563,10 +1840,10 @@ function parseNewFormat(rows,fname){
       // ── 逐打席明細（保留 inning / seq，供打擊記錄明細頁使用）──
       if(ct&&ct!=='-'){
         if(!Array.isArray(window._batDetailBuf)) window._batDetailBuf=[];
-        window._batDetailBuf.push({game:gm,no,name:nm||String(no),seq,inning:inn,content:ct,rbi:rbiV,r:rV});
+        window._batDetailBuf.push({game:gm,no,name:nm||String(no),seq,inning:inn,content:ct,rbi:rbiV,r:rV,team:lastTeam});
       }
       const key=`${gm}_${no}`;
-      if(!bdMap[key]) bdMap[key]={gm,no,name:nm||String(no),seq,ab:0,h:0,bb:0,hp:0,k:0,b1:0,b2:0,b3:0,hr:0,rbi:0,r:0};
+      if(!bdMap[key]) bdMap[key]={gm,no,name:nm||String(no),seq,ab:0,h:0,bb:0,hp:0,k:0,b1:0,b2:0,b3:0,hr:0,rbi:0,r:0,team:lastTeam};
       if(nm) bdMap[key].name=nm;
       const info=HIT_CODE_MAP[ct]||HIT_CODE_MAP[ct.toUpperCase()];
       if(info){
@@ -1746,6 +2023,9 @@ function applyData(){
     renderAwards();
     renderRankingCharts();
     initBattingSelects();renderBatting();
+    refreshTeamSelector();
+    // ★ 套用後自動儲存為預設數據（重開頁面後仍保留）
+    updateDefaultData();
     const sm=document.getElementById('apply-success');sm.style.display='block';
     setTimeout(()=>{document.querySelectorAll('nav button')[0].click();},1500);
     return;
@@ -1767,6 +2047,9 @@ function applyData(){
     renderAwards();
     renderRankingCharts();
     initBattingSelects();renderBatting();
+    refreshTeamSelector();
+    // ★ 套用後自動儲存為預設數據（重開頁面後仍保留）
+    updateDefaultData();
     const sm=document.getElementById('apply-success');sm.style.display='block';
     setTimeout(()=>{document.querySelectorAll('nav button')[0].click();},1500);
     return;
@@ -1797,6 +2080,7 @@ function applyData(){
   renderAwards();
   renderRankingCharts();
   initBattingSelects();renderBatting();
+  refreshTeamSelector();
   const sm=document.getElementById('apply-success');sm.style.display='block';
   setTimeout(()=>{document.querySelectorAll('nav button')[0].click();},1500);
 }
@@ -1848,7 +2132,8 @@ function resetData(){
 // ===== TAB 5: 打擊獎項 =====
 function renderAwards(){
   const data=buildTableData();
-  const minAB=TEAM_GAMES.length*2;
+  const filteredGames=calcTeamGameStats(); // ★ 依球隊篩選後的實際場次
+  const minAB=filteredGames.length*2; // ★ 獎項資格門檻改用篩選後場次數
   const cats=[
     {key:'avg',label:'打擊王',sort:(a,b)=>b.avg-a.avg,fmt:v=>v.toFixed(3),needQual:true},
     {key:'h',label:'安打王',sort:(a,b)=>b.h-a.h,fmt:v=>String(v),needQual:false},
@@ -1906,8 +2191,109 @@ function renderAwards(){
   }
   const fnGames=document.getElementById('fn-games');
   const fnThreshold=document.getElementById('fn-threshold');
-  if(fnGames)fnGames.textContent=TEAM_GAMES.length;
+  if(fnGames)fnGames.textContent=filteredGames.length; // ★ 顯示篩選後場次數
   if(fnThreshold)fnThreshold.textContent=minAB;
+}
+
+// ===== 多球隊篩選核心 =====
+let currentTeam = null; // null = 全部球隊
+
+function getTeamList(){
+  const teams = new Set();
+  BATTING_DATA.forEach(d=>{ if(d.team) teams.add(d.team); });
+  DEFENSE_DATA.forEach(d=>{ if(d.team) teams.add(d.team); });
+  return [...teams].sort();
+}
+
+function getFilteredBattingData(){
+  if(!currentTeam) return BATTING_DATA.filter(d=>!d.team||d.team==='好棒河馬');
+  // 好棒河馬資料部分沒有 team 欄位（舊資料），一律視為好棒河馬
+  if(currentTeam==='好棒河馬') return BATTING_DATA.filter(d=>!d.team||d.team==='好棒河馬');
+  return BATTING_DATA.filter(d=>d.team===currentTeam);
+}
+
+function getFilteredDefenseData(){
+  if(!currentTeam) return DEFENSE_DATA.filter(d=>!d.team||d.team==='好棒河馬');
+  // 好棒河馬資料部分沒有 team 欄位（舊資料），一律視為好棒河馬
+  if(currentTeam==='好棒河馬') return DEFENSE_DATA.filter(d=>!d.team||d.team==='好棒河馬');
+  return DEFENSE_DATA.filter(d=>d.team===currentTeam);
+}
+
+function refreshTeamSelector(){
+  const teams = getTeamList();
+  const sel = document.getElementById('team-select');
+  const chips = document.getElementById('team-chips');
+  if(!sel || !chips) return;
+  // 更新 select（不含「全部」選項）
+  const cur = currentTeam || (teams.length ? teams[0] : '');
+  sel.innerHTML = '';
+  teams.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = '🏁 ' + t;
+    if(t===cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // 若 currentTeam 尚未設定，自動選第一支球隊
+  if(!currentTeam && teams.length) currentTeam = teams[0];
+  // 更新 chips（快速選取按鈕，不含「全部」）
+  chips.innerHTML = '';
+  teams.forEach(t=>{
+    const btn = document.createElement('button');
+    btn.className = 'team-chip' + (currentTeam===t?' active':'');
+    btn.textContent = '🏁 ' + t;
+    btn.onclick = ()=>selectTeam(t);
+    chips.appendChild(btn);
+  });
+  // 隱藏選擇器列（無球隊資料時）
+  const bar = document.getElementById('team-selector-bar');
+  if(bar) bar.style.display = teams.length > 0 ? 'flex' : 'none';
+}
+
+function selectTeam(team, fromBtn){
+  currentTeam = team;  // 永遠是具體球隊名稱，不再有 null「全部」狀態
+  // 更新 select
+  const sel = document.getElementById('team-select');
+  if(sel) sel.value = team||'';
+  // 更新 chips 激活狀態
+  document.querySelectorAll('.team-chip').forEach(b=>b.classList.remove('active'));
+  if(fromBtn) fromBtn.classList.add('active');
+  else{
+    const chips = document.getElementById('team-chips');
+    if(chips){
+      chips.querySelectorAll('.team-chip').forEach(b=>{
+        if(b.textContent.includes(team)) b.classList.add('active');
+      });
+    }
+  }
+  // 更新提示文字
+  const hint = document.getElementById('tsb-current');
+  if(hint) hint.innerHTML = '目前顯示：<strong>' + (team||'') + '</strong> 的數據';
+  // 重新渲染所有頁籤
+  refreshAllTabs();
+}
+
+function refreshAllTabs(){
+  // 重算打擊相關資料
+  tableData = buildTableData();
+  tableData.sort((a,b)=>a.no-b.no);
+  // 清除圖表快取
+  const chartIds = ['chart-team-avg','chart-team-hits','chart-team-rbi','chart-player',
+    'chart-rank-avg','chart-rank-hits','chart-defrank-err','chart-defrank-out',
+    'chart-defrank-fpct','chart-player-def1'];
+  chartIds.forEach(id=>{ if(charts[id]){charts[id].dispose();delete charts[id];} });
+  // 重新渲染各頁籤
+  renderTeam();
+  // ★ 修正：切換球隊前先清空球員下拉選單，避免選項重複累加
+  const _pSel = document.getElementById('player-select');
+  if(_pSel) _pSel.innerHTML = '';
+  buildPlayerSelect();
+  renderTable(tableData);
+  renderRankingCharts();
+  renderAwards();
+  initBattingSelects(); renderBatting();
+  initDefenseSelects(); renderDefense();
+  renderDefRanking();
+  renderDefAwards();
 }
 
 function setupDragDrop(){
@@ -1927,85 +2313,323 @@ function switchTab(name,btn){
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
   setTimeout(()=>Object.values(charts).forEach(c=>c&&c.resize()),50);
-  if(name==='ranking')renderRankingCharts();
+  if(name==='ranking'){
+    tableData=buildTableData();
+    tableData.sort((a,b)=>a.no-b.no);
+    renderTable(tableData);
+    renderRankingCharts();
+  }
   if(name==='player')renderPlayerChart();
   if(name==='awards')renderAwards();
   if(name==='batting'){initBattingSelects();renderBatting();}
-  if(name==='defense')renderDefense();
+  if(name==='defense'){initDefenseSelects();renderDefense();}
   if(name==='defranking')renderDefRanking();
   if(name==='defawards')renderDefAwards();
   if(name==='adjust'){renderAdjustTab();}
+  if(name==='defaults'){renderDefaultsTab();}
+}
+
+// ===== TAB: 預設資料 =====
+function switchDefaultSection(section, btn){
+  document.querySelectorAll('.defaults-section').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.def-section-btn').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('defaults-'+section);
+  if(el)el.classList.add('active');
+  if(btn)btn.classList.add('active');
+}
+
+function refreshDefaultsData(){
+  const btn=document.getElementById('btn-defaults-refresh');
+  const toast=document.getElementById('defaults-refresh-toast');
+  // 啟動 loading 狀態
+  if(btn){btn.classList.add('loading');}
+  if(toast){toast.classList.remove('show');}
+  // 短暫延遲模擬查詢感（實際為同步讀取，給 UI 動畫時間）
+  setTimeout(()=>{
+    renderDefaultsTab();
+    // 更新 toast 數量資訊
+    const pCnt=document.getElementById('toast-players-cnt');
+    const gCnt=document.getElementById('toast-games-cnt');
+    const bCnt=document.getElementById('toast-batting-cnt');
+    const dCnt=document.getElementById('toast-defense-cnt');
+    if(pCnt)pCnt.textContent=PLAYERS.length;
+    if(gCnt)gCnt.textContent=TEAM_GAMES.length;
+    if(bCnt)bCnt.textContent=BATTING_DATA.length;
+    if(dCnt)dCnt.textContent=DEFENSE_DATA.length;
+    // 顯示成功 toast
+    if(toast){toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),4000);}
+    // 恢復按鈕
+    if(btn){btn.classList.remove('loading');}
+  },600);
+}
+
+function renderDefaultsTab(){
+  // ── 球員名單 ──
+  const ptbody=document.getElementById('defaults-players-tbody');
+  const pcnt=document.getElementById('defaults-players-count');
+  if(ptbody){
+    const numGames=TEAM_GAMES.length||6;
+    ptbody.innerHTML=PLAYERS.map(p=>{
+      let cells='';
+      for(let i=0;i<numGames;i++){
+        const g=p.games[i]||[0,0,0,0,0,0,0,0,0,0];
+        const ab=g[0],h=g[1],bb=g[2],k=g[3];
+        const av=ab>0?(h/ab).toFixed(3):'---';
+        cells+=`<td>${ab}/${h}/${bb}/${k}<br><span style="font-size:.72rem;color:#888;">${av}</span></td>`;
+      }
+      return `<tr><td style="font-weight:700;color:#005087;">#${p.no}</td><td style="font-weight:600;">${p.name}</td>${cells}</tr>`;
+    }).join('');
+    if(pcnt)pcnt.textContent=`${PLAYERS.length} 位球員`;
+  }
+
+  // ── 場次摘要 ──
+  const gtbody=document.getElementById('defaults-teamgames-tbody');
+  const gcnt=document.getElementById('defaults-teamgames-count');
+  if(gtbody){
+    gtbody.innerHTML=TEAM_GAMES.map(g=>{
+      const avgStr=typeof g.avg==='number'?g.avg.toFixed(3):'---';
+      const obpStr=typeof g.obp==='number'?g.obp.toFixed(3):'---';
+      const slgStr=typeof g.slg==='number'?g.slg.toFixed(3):'---';
+      return `<tr>
+        <td style="font-weight:700;color:#005087;">${g.label}</td>
+        <td>${g.ab}</td><td>${g.h}</td><td>${g.bb}</td><td>${g.k}</td>
+        <td>${g.rbi}</td><td>${g.r}</td>
+        <td>${g.b1}</td><td>${g.b2}</td><td>${g.b3}</td><td>${g.hr}</td>
+        <td style="color:#e67e22;font-weight:700;">${avgStr}</td>
+        <td style="color:#005087;font-weight:700;">${obpStr}</td>
+        <td style="color:#27ae60;font-weight:700;">${slgStr}</td>
+      </tr>`;
+    }).join('');
+    if(gcnt)gcnt.textContent=`${TEAM_GAMES.length} 場次`;
+  }
+
+  // ── 打擊記錄 ──
+  const btbody=document.getElementById('defaults-batting-tbody');
+  const bcnt=document.getElementById('defaults-batting-count');
+  if(btbody){
+    const contentColor=c=>{
+      if(['1B','1B_內'].includes(c))return 'background:#e8f5e9;color:#2e7d32;';
+      if(c==='2B')return 'background:#e3f2fd;color:#1565c0;';
+      if(c==='3B')return 'background:#fff3e0;color:#e65100;';
+      if(['HR','HR_內'].includes(c))return 'background:#fce4ec;color:#c62828;font-weight:700;';
+      if(c==='BB'||c==='HP')return 'background:#f3e5f5;color:#6a1b9a;';
+      if(c==='K')return 'background:#fdecea;color:#c0392b;';
+      return '';
+    };
+    btbody.innerHTML=BATTING_DATA.map(d=>{
+      const style=contentColor(d.content||'');
+      const badge=`<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:.78rem;font-weight:700;${style}">${d.content||'—'}</span>`;
+      return `<tr>
+        <td style="font-weight:700;color:#005087;">第${d.game}場</td>
+        <td style="font-size:.8rem;color:#666;">${d.opponent||'—'}</td>
+        <td>第${d.seq}棒</td>
+        <td>第${d.inning}局</td>
+        <td>#${d.no}</td>
+        <td style="font-weight:600;">${d.name}</td>
+        <td>${badge}</td>
+        <td>${d.rbi||0}</td>
+        <td>${d.r||0}</td>
+      </tr>`;
+    }).join('');
+    if(bcnt)bcnt.textContent=`${BATTING_DATA.length} 筆打席`;
+  }
+
+  // ── 守備記錄 ──
+  const dtbody=document.getElementById('defaults-defense-tbody');
+  const dcnt=document.getElementById('defaults-defense-count');
+  if(dtbody){
+    dtbody.innerHTML=DEFENSE_DATA.map(d=>{
+      const errBadge=d.isError
+        ?`<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:.78rem;background:#fdecea;color:#c0392b;font-weight:700;">❗ 失誤</span>`
+        :`<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:.78rem;background:#e8f5e9;color:#27ae60;font-weight:600;">✓ 正常</span>`;
+      return `<tr>
+        <td style="font-weight:700;color:#1a7f5a;">第${d.game}場</td>
+        <td style="font-size:.8rem;color:#666;">${d.opponent||'—'}</td>
+        <td>第${d.seq}棒</td>
+        <td>第${d.inning}局</td>
+        <td>#${d.no}</td>
+        <td style="font-weight:600;">${d.name}</td>
+        <td><span style="display:inline-block;padding:2px 8px;border-radius:8px;font-size:.78rem;font-weight:700;background:#e8f0fa;color:#005087;">${d.pos}</span></td>
+        <td>${errBadge}</td>
+        <td style="font-size:.82rem;color:#444;">${d.content||'—'}</td>
+      </tr>`;
+    }).join('');
+    if(dcnt)dcnt.textContent=`${DEFENSE_DATA.length} 筆守備`;
+  }
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+  // ★ 啟動時從 localStorage 還原已儲存的預設數據（若有），讓重開頁面後保留上傳內容
   try{
-    const lp=localStorage.getItem('u10_default_players');
-    const ltg=localStorage.getItem('u10_default_team_games');
-    const lbd=localStorage.getItem('u10_default_batting_data');
-    if(lp&&ltg){
-      const pArr=JSON.parse(lp),gArr=JSON.parse(ltg);
-      PLAYERS.length=0;pArr.forEach(p=>PLAYERS.push(JSON.parse(JSON.stringify(p))));
-      DEFAULT_PLAYERS.length=0;pArr.forEach(p=>DEFAULT_PLAYERS.push(JSON.parse(JSON.stringify(p))));
-      TEAM_GAMES.length=0;gArr.forEach(g=>TEAM_GAMES.push(JSON.parse(JSON.stringify(g))));
-      DEFAULT_TEAM_GAMES.length=0;gArr.forEach(g=>DEFAULT_TEAM_GAMES.push(JSON.parse(JSON.stringify(g))));
+    const lsBD=localStorage.getItem('u10_default_batting_data');
+    const lsDD=localStorage.getItem('u10_def_default_defense');
+    const lsGL=localStorage.getItem('u10_def_default_game_labels');
+    if(lsBD){
+      const parsed=JSON.parse(lsBD);
+      if(parsed&&parsed.length){
+        BATTING_DATA.length=0;
+        parsed.forEach(d=>BATTING_DATA.push(d));
+        // 同步還原 PLAYERS / TEAM_GAMES
+        try{
+          const lsP=localStorage.getItem('u10_default_players');
+          const lsG=localStorage.getItem('u10_default_team_games');
+          if(lsP&&lsG){
+            PLAYERS.length=0;JSON.parse(lsP).forEach(p=>PLAYERS.push(JSON.parse(JSON.stringify(p))));
+            TEAM_GAMES.length=0;JSON.parse(lsG).forEach(g=>TEAM_GAMES.push(JSON.parse(JSON.stringify(g))));
+          }
+        }catch(e2){}
+      }
     }
-    // ★ 還原逐打席明細（BATTING_DATA）
-    if(lbd){
-      const bdArr=JSON.parse(lbd);
-      BATTING_DATA.length=0;
-      bdArr.forEach(d=>BATTING_DATA.push(JSON.parse(JSON.stringify(d))));
+    if(lsDD){
+      const parsedDD=JSON.parse(lsDD);
+      if(parsedDD&&parsedDD.length){
+        DEFENSE_DATA.length=0;
+        parsedDD.forEach(d=>DEFENSE_DATA.push(d));
+        if(lsGL){
+          const parsedGL=JSON.parse(lsGL);
+          Object.keys(GAME_LABELS).forEach(k=>delete GAME_LABELS[k]);
+          Object.assign(GAME_LABELS,parsedGL);
+        }
+      }
     }
   }catch(e){}
+  // 初始化球隊選擇器
+  refreshTeamSelector();
   renderTeam();
   buildPlayerSelect();
   tableData=buildTableData();
   tableData.sort((a,b)=>a.no-b.no);
   renderTable(tableData);
+  renderRankingCharts();
+  renderAwards();
   setupDragDrop();
   initDefenseSelects();
   initBattingSelects();
   renderBatting();
+  renderDefRanking();
+  renderDefAwards();
 });
 
 // ===== TAB 6: 守備記錄 =====
 const DEFENSE_DATA=[
-  {game:1,opponent:'YM忍者',seq:4,inning:1,no:64,name:'黃晨睿',pos:'SS',isError:false,content:'FC'},
-  {game:1,opponent:'YM忍者',seq:9,inning:3,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'},
-  {game:2,opponent:'上智隼鷹',seq:1,inning:1,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
-  {game:2,opponent:'上智隼鷹',seq:4,inning:1,no:15,name:'陳冠安',pos:'P',isError:false,content:'GO'},
-  {game:2,opponent:'上智隼鷹',seq:6,inning:4,no:26,name:'莊閔程',pos:'2B',isError:false,content:'GO'},
-  {game:2,opponent:'上智隼鷹',seq:7,inning:2,no:15,name:'陳冠安',pos:'P',isError:false,content:'GO'},
-  {game:3,opponent:'竹北雷爵B',seq:1,inning:1,no:72,name:'張世昀',pos:'1B',isError:false,content:'FO_內'},
-  {game:4,opponent:'信義飛燕',seq:1,inning:1,no:50,name:'陳昱瑄',pos:'2B',isError:false,content:'GO'},
-  {game:4,opponent:'信義飛燕',seq:1,inning:2,no:9,name:'蕭沛庭',pos:'SS',isError:false,content:'GO'},
-  {game:4,opponent:'信義飛燕',seq:3,inning:1,no:50,name:'陳昱瑄',pos:'2B',isError:false,content:'GO'},
-  {game:4,opponent:'信義飛燕',seq:3,inning:2,no:72,name:'張世昀',pos:'1B',isError:false,content:'GO'},
-  {game:4,opponent:'信義飛燕',seq:9,inning:2,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
-  {game:5,opponent:'竹北雷爵A',seq:2,inning:2,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
-  {game:5,opponent:'竹北雷爵A',seq:3,inning:4,no:77,name:'林承熙',pos:'RF',isError:false,content:'FO'},
-  {game:5,opponent:'竹北雷爵A',seq:5,inning:3,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
-  {game:5,opponent:'竹北雷爵A',seq:5,inning:4,no:82,name:'鄞圻睿',pos:'P',isError:false,content:'FC'},
-  {game:5,opponent:'竹北雷爵A',seq:6,inning:1,no:64,name:'黃晨睿',pos:'3B',isError:false,content:'FC'},
-  {game:6,opponent:'活力社區',seq:1,inning:3,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'FC'},
-  {game:6,opponent:'活力社區',seq:3,inning:1,no:50,name:'陳昱瑄',pos:'1B',isError:false,content:'FO_內'},
-  {game:6,opponent:'活力社區',seq:3,inning:3,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'},
-  {game:6,opponent:'活力社區',seq:6,inning:2,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'},
-  {game:6,opponent:'活力社區',seq:7,inning:2,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'}
+  // ===== U10 好棒河馬 =====
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:4,inning:1,no:64,name:'黃晨睿',pos:'SS',isError:false,content:'FC'},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:9,inning:3,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:1,inning:1,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:4,inning:1,no:15,name:'陳冠安',pos:'P',isError:false,content:'GO'},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:6,inning:4,no:26,name:'莊閔程',pos:'2B',isError:false,content:'GO'},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:7,inning:2,no:15,name:'陳冠安',pos:'P',isError:false,content:'GO'},
+  {game:3,team:'好棒河馬',opponent:'竹北雷爵B',seq:1,inning:1,no:72,name:'張世昀',pos:'1B',isError:false,content:'FO_內'},
+  {game:4,team:'好棒河馬',opponent:'信義飛燕',seq:1,inning:1,no:50,name:'陳昱瑄',pos:'2B',isError:false,content:'GO'},
+  {game:4,team:'好棒河馬',opponent:'信義飛燕',seq:1,inning:2,no:9,name:'蕭沛庭',pos:'SS',isError:false,content:'GO'},
+  {game:4,team:'好棒河馬',opponent:'信義飛燕',seq:3,inning:1,no:50,name:'陳昱瑄',pos:'2B',isError:false,content:'GO'},
+  {game:4,team:'好棒河馬',opponent:'信義飛燕',seq:3,inning:2,no:72,name:'張世昀',pos:'1B',isError:false,content:'GO'},
+  {game:4,team:'好棒河馬',opponent:'信義飛燕',seq:9,inning:2,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
+  {game:5,team:'好棒河馬',opponent:'竹北雷爵A',seq:2,inning:2,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
+  {game:5,team:'好棒河馬',opponent:'竹北雷爵A',seq:3,inning:4,no:77,name:'林承熙',pos:'RF',isError:false,content:'FO'},
+  {game:5,team:'好棒河馬',opponent:'竹北雷爵A',seq:5,inning:3,no:72,name:'張世昀',pos:'1B',isError:true,content:'E_內'},
+  {game:5,team:'好棒河馬',opponent:'竹北雷爵A',seq:5,inning:4,no:82,name:'鄞圻睿',pos:'P',isError:false,content:'FC'},
+  {game:5,team:'好棒河馬',opponent:'竹北雷爵A',seq:6,inning:1,no:64,name:'黃晨睿',pos:'3B',isError:false,content:'FC'},
+  {game:6,team:'好棒河馬',opponent:'活力社區',seq:1,inning:3,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'FC'},
+  {game:6,team:'好棒河馬',opponent:'活力社區',seq:3,inning:1,no:50,name:'陳昱瑄',pos:'1B',isError:false,content:'FO_內'},
+  {game:6,team:'好棒河馬',opponent:'活力社區',seq:3,inning:3,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'},
+  {game:6,team:'好棒河馬',opponent:'活力社區',seq:6,inning:2,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'},
+  {game:6,team:'好棒河馬',opponent:'活力社區',seq:7,inning:2,no:9,name:'蕭沛庭',pos:'P',isError:false,content:'GO'},
+  // ===== U8 泰山河馬 ===== (依守備記錄範本_all.xlsx 更新)
+  // U8場次1 vs 竹北雷爵
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:1,inning:2,no:23,name:'吳倚墨',pos:'CF',isError:false,content:'FO'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:1,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:true,content:'E_內'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:1,inning:4,no:9,name:'張郁晨',pos:'3B',isError:true,content:'E_內'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:2,inning:4,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:2,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:3,no:17,name:'楊定侖',pos:'1B',isError:true,content:'E_內'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:4,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:4,inning:3,no:17,name:'楊定侖',pos:'1B',isError:true,content:'E_內'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:5,inning:3,no:18,name:'許少澄',pos:'2B',isError:false,content:'FC'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:7,inning:2,no:17,name:'楊定侖',pos:'1B',isError:false,content:'GO'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:9,inning:2,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:9,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  // U8場次2 vs 信義飛燕
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:2,inning:3,no:6,name:'陳曄',pos:'P',isError:true,content:'E_內'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:3,inning:1,no:9,name:'張郁晨',pos:'3B',isError:true,content:'E_內'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:3,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'GO'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:3,inning:4,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:4,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:4,inning:4,no:15,name:'陳冠安',pos:'3B',isError:false,content:'FC'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:5,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:5,inning:2,no:9,name:'張郁晨',pos:'3B',isError:false,content:'FO_內'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:5,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:true,content:'E_內'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:6,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:6,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:6,inning:4,no:17,name:'楊定侖',pos:'1B',isError:true,content:'E_內'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:7,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:8,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:8,inning:4,no:17,name:'楊定侖',pos:'1B',isError:false,content:'GO'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:9,inning:2,no:9,name:'張郁晨',pos:'3B',isError:false,content:'FC'},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:9,inning:3,no:15,name:'陳冠安',pos:'3B',isError:true,content:'E_內'},
+  // U8場次3 vs 麋鹿社區T1
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:1,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'GO'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:1,inning:4,no:17,name:'楊定侖',pos:'1B',isError:true,content:'E_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:2,inning:2,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:2,inning:3,no:9,name:'張郁晨',pos:'3B',isError:true,content:'E_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:2,inning:4,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:3,inning:1,no:6,name:'陳曄',pos:'P',isError:true,content:'E_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:3,inning:4,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:4,inning:2,no:9,name:'張郁晨',pos:'3B',isError:false,content:'FC'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:5,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:5,inning:4,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:2,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:true,content:'E_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:4,no:17,name:'楊定侖',pos:'1B',isError:true,content:'E_內'},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:9,inning:4,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  // U8場次4 vs KEEP棒球學院
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:1,no:9,name:'張郁晨',pos:'3B',isError:true,content:'E_內'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:2,no:6,name:'陳曄',pos:'P',isError:false,content:'GO'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'GO'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:4,no:9,name:'張郁晨',pos:'3B',isError:false,content:'GO'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:2,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:true,content:'E_內'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:3,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:3,inning:2,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FO_內'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:3,inning:3,no:6,name:'陳曄',pos:'P',isError:true,content:'E_內'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:4,inning:1,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:4,inning:2,no:9,name:'張郁晨',pos:'3B',isError:false,content:'FO_內'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:6,inning:3,no:17,name:'楊定侖',pos:'1B',isError:false,content:'GO'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:6,inning:4,no:91,name:'林倬安',pos:'RF',isError:false,content:'FC'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:8,inning:2,no:98,name:'朱彥宇',pos:'SS',isError:true,content:'E_內'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:8,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:8,inning:4,no:18,name:'許少澄',pos:'2B',isError:true,content:'E_內'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:9,inning:2,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:9,inning:3,no:98,name:'朱彥宇',pos:'SS',isError:false,content:'FC'}
 ];
 const DEFAULT_DEFENSE_DATA=JSON.parse(JSON.stringify(DEFENSE_DATA));
 
 const GAME_LABELS={
   1:'第1場 vs YM忍者',2:'第2場 vs 上智隼鷹',3:'第3場 vs 竹北雷爵B',
-  4:'第4場 vs 信義飛燕',5:'第5場 vs 竹北雷爵A',6:'第6場 vs 活力社區'
+  4:'第4場 vs 信義飛燕',5:'第5場 vs 竹北雷爵A',6:'第6場 vs 活力社區',
+  7:'第1場 vs 竹北雷爵',8:'第2場 vs 信義飛燕',9:'第3場 vs 麋鹿社區T1',10:'第4場 vs KEEP棒球學院'
 };
 
 function buildDefensePlayerList(){
-  const names={};
-  DEFENSE_DATA.forEach(d=>{ if(d.no!=null) names[d.no]=d.name; });
-  return Object.entries(names).sort((a,b)=>+a[0]-+b[0]).map(([no,name])=>({no:+no,name}));
+  // 使用 team+no+name 複合識別，避免跨球隊同號不同人
+  const fdd=getFilteredDefenseData();
+  const seen=new Map();
+  fdd.forEach(d=>{
+    if(d.no!=null){
+      const key=(d.team||'')+'-'+d.no+'-'+d.name;
+      if(!seen.has(key)) seen.set(key,{no:d.no,name:d.name,team:d.team||''});
+    }
+  });
+  return [...seen.values()].sort((a,b)=>a.no-b.no);
 }
 
 function renderDefense(){
+  const fdd=getFilteredDefenseData();
+  // ★ 建立相對場次標籤（各隊從第1場起算，不使用全域 GAME_LABELS 索引）
+  const _gameNumsSorted=[...new Set(fdd.map(d=>d.game))].sort((a,b)=>a-b);
+  const _relGameLabel={};
+  _gameNumsSorted.forEach((g,idx)=>{_relGameLabel[g]='第'+(idx+1)+'場';});
   const viewMode=document.getElementById('def-view-mode').value;
   const tbody=document.getElementById('def-tbody');
   tbody.innerHTML='';
@@ -2013,15 +2637,15 @@ function renderDefense(){
     const selGame=+document.getElementById('def-game-sel').value;
     if(selGame===0){
       // 全隊累積：列 = 打序，欄 = 各場次
-      const allSeqs=[...new Set(DEFENSE_DATA.map(d=>d.seq))].sort((a,b)=>a-b);
-      const gameKeys=Object.keys(GAME_LABELS).map(Number).sort((a,b)=>a-b);
+      const allSeqs=[...new Set(fdd.map(d=>d.seq))].sort((a,b)=>a-b);
+      const gameKeys=[...new Set(fdd.map(d=>d.game))].sort((a,b)=>a-b);
       document.getElementById('def-thead-row').innerHTML=
-        '<th style="background:#34495e;">打序</th>'+gameKeys.map((g,idx)=>`<th class="${idx>0?'inning-sep':''}" style="background:#34495e;white-space:nowrap;">${GAME_LABELS[g]}</th>`).join('');
+        '<th style="background:#34495e;">打序</th>'+gameKeys.map((g,idx)=>`<th class="${idx>0?'inning-sep':''}" style="background:#34495e;white-space:nowrap;">${_relGameLabel[g]||'第'+g+'場'}</th>`).join('');
       allSeqs.forEach(seq=>{
         const tr=document.createElement('tr');
         let html=`<td class="seq-cell">第${seq}棒</td>`;
         gameKeys.forEach((g,idx)=>{
-          const entries=DEFENSE_DATA.filter(d=>d.seq===seq&&d.game===g);
+          const entries=fdd.filter(d=>d.seq===seq&&d.game===g);
           const cls=idx>0?'inning-sep':'';
           if(entries.length){
             const badges=entries.map(e=>{
@@ -2039,7 +2663,7 @@ function renderDefense(){
         tbody.appendChild(tr);
       });
     }else{
-      const rows=DEFENSE_DATA.filter(d=>d.game===selGame);
+      const rows=fdd.filter(d=>d.game===selGame);
       const seqs=[...new Set(rows.map(d=>d.seq))].sort((a,b)=>a-b);
       const gameInnings=[...new Set(rows.map(d=>d.inning))].sort((a,b)=>a-b);
       document.getElementById('def-thead-row').innerHTML=
@@ -2067,15 +2691,18 @@ function renderDefense(){
       });
     }
   }else{
-    const selNo=+document.getElementById('def-player-sel').value;
-    if(selNo===0){
+    // selRaw 格式為 "name|||team"（encodeURIComponent）
+    const selRaw=document.getElementById('def-player-sel').value;
+    const isAll=(selRaw==='0');
+    const [selDefName,selDefTeam]=isAll?[null,null]:decodeURIComponent(selRaw).split('|||');
+    if(isAll){
       // 全隊累積：顯示全部紀錄
       document.getElementById('def-thead-row').innerHTML='<th>場次</th><th>局數</th><th>打序</th><th>背號</th><th>姓名</th><th>守備內容</th><th>守備位置</th>';
-      const allRows=[...DEFENSE_DATA].sort((a,b)=>a.game-b.game||a.inning-b.inning||a.seq-b.seq);
+      const allRows=[...fdd].sort((a,b)=>a.game-b.game||a.inning-b.inning||a.seq-b.seq);
       allRows.forEach(e=>{
         const tr=document.createElement('tr');
         const errCls=e.isError?' error':'';
-        tr.innerHTML=`<td class="player-cell">${GAME_LABELS[e.game]}</td>`+
+        tr.innerHTML=`<td class="player-cell">${_relGameLabel[e.game]||GAME_LABELS[e.game]||'第'+e.game+'場'}</td>`+
           `<td>第${e.inning}局</td>`+
           `<td>第${e.seq}棒</td>`+
           `<td style="font-weight:700;color:#34495e;">${e.no!=null?'#'+e.no:'—'}</td>`+
@@ -2085,7 +2712,8 @@ function renderDefense(){
         tbody.appendChild(tr);
       });
     }else{
-      const rows=DEFENSE_DATA.filter(d=>d.no===selNo);
+      // ★ 以 name+team 篩選，避免跨球隊同名球員混在一起
+      const rows=fdd.filter(d=>d.name===selDefName && (d.team||'')===(selDefTeam||''));
       document.getElementById('def-thead-row').innerHTML='<th>場次</th><th>局數</th><th>守備內容</th><th>守備位置</th>';
       if(!rows.length){
         tbody.innerHTML='<tr><td colspan="4" style="color:#999;padding:20px;">該球員本季無守備記錄</td></tr>';
@@ -2094,7 +2722,7 @@ function renderDefense(){
       rows.sort((a,b)=>a.game-b.game||a.inning-b.inning).forEach(e=>{
         const tr=document.createElement('tr');
         const errCls=e.isError?' error':'';
-        tr.innerHTML=`<td class="player-cell">${GAME_LABELS[e.game]}</td>`+
+        tr.innerHTML=`<td class="player-cell">${_relGameLabel[e.game]||GAME_LABELS[e.game]||'第'+e.game+'場'}</td>`+
           `<td>第${e.inning}局</td>`+
           `<td>${e.content||'—'}</td>`+
           `<td><span class="pos-badge${errCls}">${e.pos}${e.isError?' ❗':''}</span></td>`;
@@ -2102,17 +2730,36 @@ function renderDefense(){
       });
     }
   }
-  const total=DEFENSE_DATA.length;
-  const errCount=DEFENSE_DATA.filter(d=>d.isError).length;
+  const total=fdd.length;
+  const errCount=fdd.filter(d=>d.isError).length;
   document.getElementById('def-summary').textContent=`共 ${total} 筆守備記錄，其中 ${errCount} 筆守備失誤`;
 }
 
 function initDefenseSelects(){
   const gSel=document.getElementById('def-game-sel');
-  gSel.innerHTML='<option value="0">🏆 全隊累積</option>'+Object.entries(GAME_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  // ★ 修正：依 currentTeam 篩選後的守備資料動態建立場次選單（不再用全域 GAME_LABELS）
+  const fdd=getFilteredDefenseData();
+  const gameNums=[...new Set(fdd.map(d=>d.game))].sort((a,b)=>a-b);
+  const gameOpp={};
+  fdd.forEach(d=>{ if(!gameOpp[d.game]) gameOpp[d.game]=d.opponent||''; });
+  gSel.innerHTML='<option value="0">🏆 全隊累積</option>'+
+    gameNums.map((g,idx)=>{
+      const relNo=idx+1;
+      const opp=gameOpp[g]?` vs ${gameOpp[g]}`:
+        (GAME_LABELS[g]?GAME_LABELS[g].replace(/^第\d+場/,''):'');
+      return `<option value="${g}">第${relNo}場${opp}</option>`;
+    }).join('');
+  // ★ 修正：球員選單也依 currentTeam 篩選（buildDefensePlayerList 內部已呼叫 getFilteredDefenseData）
   const pSel=document.getElementById('def-player-sel');
   const players=buildDefensePlayerList();
-  pSel.innerHTML='<option value="0">🏆 全隊累積</option>'+players.map(p=>`<option value="${p.no}">#${p.no} ${p.name}</option>`).join('');
+  // 判斷是否為單球隊模式（單隊不顯示隊名標籤）
+  const teamsInFdd=[...new Set(fdd.map(d=>d.team||'好棒河馬'))];
+  const isSingleTeam=teamsInFdd.length<=1;
+  pSel.innerHTML='<option value="0">🏆 全隊累積</option>'+players.map(p=>{
+    const key=encodeURIComponent(`${p.name}|||${p.team||''}`);
+    const teamLabel=(!isSingleTeam && p.team)?` [${p.team}]`:'';
+    return `<option value="${key}">#${p.no} ${p.name}${teamLabel}</option>`;
+  }).join('');
 }
 
 function switchDefViewMode(mode){
@@ -2287,19 +2934,25 @@ function parseDefData(rows, fname){
 
 // ===== 新格式：守備記錄（→ DEFENSE_DATA）=====
 function parseDefRecordNew(rows, fname){
-  // Step1: 定位含「賽程」的標題行
+  // Step1: 定位欄位標題行（支援雙層標題格式）
   let headerRowIdx=-1;
+  let subHeaderRowIdx=-1;
   for(let i=0;i<Math.min(rows.length,5);i++){
-    if(rows[i]&&rows[i].some(c=>String(c||'').trim()==='賽程')){ headerRowIdx=i; break; }
+    const r=rows[i]; if(!r) continue;
+    const vals=r.map(c=>String(c||'').trim());
+    if(vals.includes('賽程') && headerRowIdx<0) headerRowIdx=i;
+    if(vals.includes('場次')&&(vals.includes('打序')||vals.includes('棒序'))&&subHeaderRowIdx<0) subHeaderRowIdx=i;
   }
-  if(headerRowIdx<0){ showDefUploadMsg('error','❌ 找不到「賽程」標題行，請確認格式'); return; }
+  if(subHeaderRowIdx<0) subHeaderRowIdx=headerRowIdx;
+  if(subHeaderRowIdx<0){ showDefUploadMsg('error','❌ 找不到含「場次」「打序」的標題行，請確認格式'); return; }
 
-  const h1=rows[headerRowIdx].map(c=>String(c||'').trim());
-  const h0=headerRowIdx>0?rows[headerRowIdx-1].map(c=>String(c||'').trim()):[];
+  const h1=rows[subHeaderRowIdx].map(c=>String(c||'').trim());
+  const h0=subHeaderRowIdx>0?rows[subHeaderRowIdx-1].map(c=>String(c||'').trim()):[];
 
   // Step2: 從標題行找固定欄
   const colGame=h1.findIndex(v=>v==='場次');
   const colOpp =h1.findIndex(v=>v==='對戰球隊'||v==='對隊'||v==='對手');
+  const colTeamD=h1.findIndex(v=>v==='出賽球隊'||v==='球隊');
   const colSeq =h1.findIndex(v=>v==='打序'||v==='棒序');
   if(colGame<0||colSeq<0){
     showDefUploadMsg('error',`❌ 標題行找不到「場次」或「打序」欄。偵測到：${h1.filter(v=>v).join('、')}`);
@@ -2338,12 +2991,21 @@ function parseDefRecordNew(rows, fname){
 
   // Step5: 解析資料列
   const result=[];
-  for(let r=headerRowIdx+1;r<rows.length;r++){
+  let lastTeamD=''; // 合併儲存格時沿用上一列球隊名稱
+  let lastGmD=0; let lastSeqD=0; // 場次/打序合併儲存格沿用
+  for(let r=subHeaderRowIdx+1;r<rows.length;r++){
     const row=rows[r];
     if(!row||row.every(c=>String(c??'').trim()==='')) continue;
-    const gmRaw=row[colGame]; const gm=parseInt(String(gmRaw??'').trim().replace(/[^0-9]/g,''))||0; // 支援 "#1" 等格式
+    const gmRaw=row[colGame]; const gmParsed=parseInt(String(gmRaw??'').trim().replace(/[^0-9]/g,''))||0;
+    const gm=gmParsed||lastGmD; if(gmParsed) lastGmD=gmParsed;
     const opponent=colOpp>=0?String(row[colOpp]??'').trim():'';
-    const seq=parseInt(String(row[colSeq]??'').trim())||0;
+    const teamDRaw=colTeamD>=0?String(row[colTeamD]??'').trim():'';
+    if(teamDRaw) lastTeamD=teamDRaw;
+    const teamD=lastTeamD;
+    const seqParsed=parseInt(String(row[colSeq]??'').trim().replace(/[^0-9]/g,''))||0;
+    if(gm!==lastGmD||gmParsed) lastSeqD=0;
+    if(seqParsed>0) lastSeqD=seqParsed;
+    const seq=lastSeqD;
     if(!gm) continue;
     for(let inn=1;inn<=maxInn;inn++){
       const ct =String(row[grp.content+(inn-1)]??'').trim();
@@ -2354,19 +3016,19 @@ function parseDefRecordNew(rows, fname){
       const no=(!noR||noR==='-')?null:parseInt(noR)||null; // 背號空白→null（投手動作如K/BB）
       if(no===null&&!nm) continue; // 背號與姓名皆空白則跳過
       const isError=ct.toUpperCase().startsWith('E');
-      result.push({game:gm,opponent,seq,inning:inn,no,name:nm||'',pos,isError,content:ct.toUpperCase()});
+      result.push({game:gm,opponent,team:teamD,seq,inning:inn,no,name:nm||'',pos,isError,content:ct.toUpperCase()});
     }
   }
   if(!result.length){
     // 列出前3筆資料列的原始值，幫助診斷
     let rowDiag='';
-    for(let r=headerRowIdx+1;r<Math.min(rows.length,headerRowIdx+4);r++){
+    for(let r=subHeaderRowIdx+1;r<Math.min(rows.length,subHeaderRowIdx+4);r++){
       const row=rows[r]||[];
       rowDiag+=`\n第${r+1}列 → 場次欄[${colGame+1}]="${row[colGame]??'(空)'}" 打序欄[${colSeq+1}]="${row[colSeq]??'(空)'}" 守備內容欄[${grp.content+1}]="${row[grp.content]??'(空)'}" 背號欄[${grp.no+1}]="${row[grp.no]??'(空)'}"`;
     }
     showDefUploadMsg('error',
       `❌ 未解析到有效守備記錄。`+
-      `\n偵測：標題第${headerRowIdx+1}列，場次欄=第${colGame+1}欄，守備內容=第${grp.content+1}欄，背號=第${grp.no+1}欄，${maxInn}局`+
+      `\n偵測：標題第${subHeaderRowIdx+1}列，場次欄=第${colGame+1}欄，守備內容=第${grp.content+1}欄，背號=第${grp.no+1}欄，${maxInn}局`+
       `\n【前3列原始值】${rowDiag}`);
     return;
   }
@@ -2436,13 +3098,16 @@ function applyDefData(){
     const gmSet=[...new Set(DEFENSE_DATA.map(d=>d.game))].sort((a,b)=>a-b);
     gmSet.forEach(g=>{ GAME_LABELS[g]=`第${g}場 vs ${DEFENSE_DATA.find(d=>d.game===g)?.opponent||'對手'}`; });
     // 清除守備相關圖表快取
-    Object.keys(charts).filter(id=>id.startsWith('chart-def')).forEach(id=>{
+    Object.keys(charts).filter(id=>id.startsWith('chart-def')||id==='chart-player-def1').forEach(id=>{
       if(charts[id]){charts[id].dispose();delete charts[id];}
     });
     initDefenseSelects();
     renderDefense();
     renderDefRanking();
     renderDefAwards();
+    refreshTeamSelector();
+    // ★ 套用後自動儲存為預設守備數據（重開頁面後仍保留）
+    saveDefDefault();
     const sm = document.getElementById('def-apply-success');
     sm.style.display='block';
     setTimeout(()=>{ sm.style.display='none';
@@ -2512,26 +3177,12 @@ function clearDefData(){
 
 // 設定守備上傳拖放
 document.addEventListener('DOMContentLoaded',()=>{
-  // ★ 還原預設守備數據（DEFENSE_DATA + GAME_LABELS）
+  // ★ localStorage 已在第一個 DOMContentLoaded 清除，此處直接使用 HTML 內建守備資料
+  // 從 DEFENSE_DATA 重建 GAME_LABELS
   try{
-    const lsDef=localStorage.getItem('u10_def_default_defense');
-    const lsGL=localStorage.getItem('u10_def_default_game_labels');
-    if(lsDef){
-      const defArr=JSON.parse(lsDef);
-      DEFENSE_DATA.length=0;
-      defArr.forEach(d=>DEFENSE_DATA.push(JSON.parse(JSON.stringify(d))));
-      // 還原 GAME_LABELS：優先用已儲存的版本，否則從 DEFENSE_DATA 重建
-      Object.keys(GAME_LABELS).forEach(k=>delete GAME_LABELS[k]);
-      if(lsGL){
-        const glObj=JSON.parse(lsGL);
-        Object.assign(GAME_LABELS,glObj);
-      }else{
-        const gmSet=[...new Set(DEFENSE_DATA.map(d=>d.game))].sort((a,b)=>a-b);
-        gmSet.forEach(g=>{ GAME_LABELS[g]=`第${g}場 vs ${DEFENSE_DATA.find(d=>d.game===g)?.opponent||'對手'}`; });
-      }
-      // ★ 重新初始化守備下拉選單（場次 & 球員），確保反映最新預設資料
-      initDefenseSelects();
-    }
+    Object.keys(GAME_LABELS).forEach(k=>delete GAME_LABELS[k]);
+    const gmSet=[...new Set(DEFENSE_DATA.map(d=>d.game))].sort((a,b)=>a-b);
+    gmSet.forEach(g=>{ GAME_LABELS[g]=`第${g}場 vs ${DEFENSE_DATA.find(d=>d.game===g)?.opponent||'對手'}`; });
   }catch(e){}
   const zone = document.getElementById('def-drop-zone');
   if(zone){
@@ -2549,9 +3200,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ===== TAB 8: 守備排行榜 =====
 function buildDefRankStats(){
   const map={};
-  DEFENSE_DATA.forEach(d=>{
-    if(!map[d.no]) map[d.no]={no:d.no,name:d.name,total:0,errors:0,go:0,dp:0,fo:0,fo_in:0,fc:0,sf:0,sac:0,e_out:0,e_in:0};
-    const p=map[d.no];
+  getFilteredDefenseData().forEach(d=>{
+    // ★ 改用 name|||team 作鍵，避免跨球隊同號球員被当同一人計算
+    const key=`${d.name}|||${d.team||''}`;
+    if(!map[key]) map[key]={no:d.no,name:d.name,team:d.team||'',total:0,errors:0,go:0,dp:0,fo:0,fo_in:0,fc:0,sf:0,sac:0,e_out:0,e_in:0};
+    const p=map[key];
     p.total++;
     if(d.isError) p.errors++;
     if(d.content==='GO') p.go++;
@@ -2588,16 +3241,21 @@ function renderDefRanking(){
   function rankCls(i){return i===0?'r1':i===1?'r2':i===2?'r3':'';}
   function rankLabel(i){return i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;}  
 
+  // ★ 輔助函數：有 team 的球員（U8）加隊伍標籤
+  function pNameCell(p){
+    return p.team ? `${p.name}<span style="font-size:.7rem;color:#888;margin-left:3px;">[${p.team}]</span>` : p.name;
+  }
+
   // ── 守備次數排行 ──
   const byTotal=[...players].sort((a,b)=>b.total-a.total||a.no-b.no);
   document.getElementById('dr-total-tbody').innerHTML=byTotal.map((p,i)=>
-    `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${p.name}</td><td class="val-hi">${p.total}</td><td>${p.outs}</td></tr>`
+    `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${pNameCell(p)}</td><td class="val-hi">${p.total}</td><td>${p.outs}</td></tr>`
   ).join('');
 
   // ── 出局貢獻排行 ──
   const byOuts=[...players].sort((a,b)=>b.outs-a.outs||a.no-b.no);
   document.getElementById('dr-outs-tbody').innerHTML=byOuts.map((p,i)=>
-    `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${p.name}</td><td class="val-hi">${p.outs}</td><td>${p.go}</td><td>${p.fo+p.fo_in}</td><td>${p.fc}</td></tr>`
+    `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${pNameCell(p)}</td><td class="val-hi">${p.outs}</td><td>${p.go}</td><td>${p.fo+p.fo_in}</td><td>${p.fc}</td></tr>`
   ).join('');
 
   // ── 守備率排行 ──
@@ -2605,14 +3263,14 @@ function renderDefRanking(){
   document.getElementById('dr-fpct-tbody').innerHTML=byFpct.map((p,i)=>{
     const fp=p.fpct!==null?p.fpct.toFixed(3):'---';
     const cls=p.errors===0?'val-hi':p.errors>2?'val-err':'';
-    return `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${p.name}</td><td class="${cls}">${fp}</td><td>${p.total}</td><td>${p.errors>0?'<span class="val-err">'+p.errors+'</span>':0}</td></tr>`;
+    return `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${pNameCell(p)}</td><td class="${cls}">${fp}</td><td>${p.total}</td><td>${p.errors>0?'<span class="val-err">'+p.errors+'</span>':0}</td></tr>`;
   }).join('');
 
   // ── 失誤次數排行（只顯示有失誤者；若全0則顯示提示）──
   const withErr=[...players].filter(p=>p.errors>0).sort((a,b)=>b.errors-a.errors||a.no-b.no);
   document.getElementById('dr-err-tbody').innerHTML=withErr.length
     ? withErr.map((p,i)=>
-        `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${p.name}</td><td class="val-err">${p.errors}</td><td>${p.e_in}</td><td>${p.e_out}</td></tr>`
+        `<tr><td class="rank-no ${rankCls(i)}">${rankLabel(i)}</td><td>#${p.no}</td><td class="pname">${pNameCell(p)}</td><td class="val-err">${p.errors}</td><td>${p.e_in}</td><td>${p.e_out}</td></tr>`
       ).join('')
     : '<tr><td colspan="6" style="color:#27ae60;padding:14px;font-weight:600;">🎉 本季無守備失誤！</td></tr>';
 
@@ -2679,56 +3337,57 @@ function renderDefRanking(){
 
 // ===== TAB: 打擊記錄 =====
 const BATTING_DATA = [
+  // ===== U10 好棒河馬 =====
   // 場次1 vs YM忍者
-  {game:1,opponent:'YM忍者',seq:1,inning:1,no:64,name:'黃晨睿',content:'E_內',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:1,inning:2,no:64,name:'黃晨睿',content:'BB',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:1,inning:3,no:64,name:'黃晨睿',content:'FO',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:2,inning:1,no:98,name:'朱彥宇',content:'GO',rbi:1,r:0},
-  {game:1,opponent:'YM忍者',seq:2,inning:2,no:98,name:'朱彥宇',content:'2B',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:2,inning:3,no:98,name:'朱彥宇',content:'1B',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:3,inning:1,no:9,name:'蕭沛庭',content:'1B',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:3,inning:2,no:9,name:'蕭沛庭',content:'HR_內',rbi:1,r:1},
-  {game:1,opponent:'YM忍者',seq:3,inning:3,no:9,name:'蕭沛庭',content:'BB',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:4,inning:1,no:34,name:'劉禹樂',content:'HR_內',rbi:2,r:1},
-  {game:1,opponent:'YM忍者',seq:4,inning:2,no:34,name:'劉禹樂',content:'FO',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:4,inning:3,no:34,name:'劉禹樂',content:'BB',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:5,inning:1,no:82,name:'鄞圻睿',content:'1B',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:5,inning:2,no:82,name:'鄞圻睿',content:'GO',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:5,inning:3,no:82,name:'鄞圻睿',content:'BB',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:6,inning:1,no:15,name:'陳冠安',content:'3B',rbi:1,r:0},
-  {game:1,opponent:'YM忍者',seq:6,inning:3,no:15,name:'陳冠安',content:'K',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:6,inning:4,no:15,name:'陳冠安',content:'BB',rbi:0,r:1},
-  {game:1,opponent:'YM忍者',seq:7,inning:1,no:72,name:'張世昀',content:'E_內',rbi:1,r:0},
-  {game:1,opponent:'YM忍者',seq:7,inning:3,no:72,name:'張世昀',content:'GO',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:7,inning:4,no:77,name:'林承熙',content:'K',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:8,inning:1,no:39,name:'黃宇謙',content:'FC',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:8,inning:3,no:39,name:'黃宇謙',content:'2B',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:8,inning:4,no:26,name:'莊閔程',content:'K',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:9,inning:2,no:99,name:'張郁晨',content:'GO',rbi:0,r:0},
-  {game:1,opponent:'YM忍者',seq:9,inning:3,no:99,name:'張郁晨',content:'GO',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:1,inning:1,no:64,name:'黃晨睿',content:'E_內',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:1,inning:2,no:64,name:'黃晨睿',content:'BB',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:1,inning:4,no:64,name:'黃晨睿',content:'FO',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:2,inning:1,no:98,name:'朱彥宇',content:'GO',rbi:1,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:2,inning:2,no:98,name:'朱彥宇',content:'2B',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:2,inning:4,no:98,name:'朱彥宇',content:'1B',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:3,inning:1,no:9,name:'蕭沛庭',content:'1B',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:3,inning:2,no:9,name:'蕭沛庭',content:'HR_內',rbi:1,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:3,inning:4,no:9,name:'蕭沛庭',content:'BB',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:4,inning:1,no:34,name:'劉禹樂',content:'HR_內',rbi:2,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:4,inning:2,no:34,name:'劉禹樂',content:'FO',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:4,inning:4,no:34,name:'劉禹樂',content:'BB',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:5,inning:1,no:82,name:'鄞圻睿',content:'1B',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:5,inning:2,no:82,name:'鄞圻睿',content:'GO',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:5,inning:4,no:82,name:'鄞圻睿',content:'BB',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:6,inning:1,no:15,name:'陳冠安',content:'3B',rbi:1,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:6,inning:3,no:15,name:'陳冠安',content:'K',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:6,inning:4,no:15,name:'陳冠安',content:'BB',rbi:0,r:1},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:7,inning:1,no:72,name:'張世昀',content:'E_內',rbi:1,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:7,inning:3,no:72,name:'張世昀',content:'GO',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:7,inning:4,no:77,name:'林承熙',content:'K',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:8,inning:1,no:39,name:'黃宇謙',content:'FC',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:8,inning:3,no:39,name:'黃宇謙',content:'2B',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:8,inning:4,no:26,name:'莊閔程',content:'K',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:9,inning:2,no:99,name:'張郁晨',content:'GO',rbi:0,r:0},
+  {game:1,team:'好棒河馬',opponent:'YM忍者',seq:9,inning:3,no:99,name:'張郁晨',content:'GO',rbi:0,r:0},
   // 場次2 vs 上智隼鷹
-  {game:2,opponent:'上智隼鷹',seq:1,inning:1,no:8,name:'何天浩',content:'K',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:1,inning:2,no:8,name:'何天浩',content:'1B',rbi:0,r:1},
-  {game:2,opponent:'上智隼鷹',seq:1,inning:3,no:8,name:'何天浩',content:'3B',rbi:0,r:1},
-  {game:2,opponent:'上智隼鷹',seq:2,inning:1,no:98,name:'朱彥宇',content:'E_內',rbi:0,r:1},
-  {game:2,opponent:'上智隼鷹',seq:2,inning:2,no:98,name:'朱彥宇',content:'2B',rbi:2,r:1},
-  {game:2,opponent:'上智隼鷹',seq:2,inning:3,no:98,name:'朱彥宇',content:'1B',rbi:0,r:1},
-  {game:2,opponent:'上智隼鷹',seq:3,inning:1,no:9,name:'蕭沛庭',content:'BB',rbi:0,r:1},
-  {game:2,opponent:'上智隼鷹',seq:3,inning:2,no:9,name:'蕭沛庭',content:'HR_內',rbi:1,r:1},
-  {game:2,opponent:'上智隼鷹',seq:3,inning:3,no:9,name:'蕭沛庭',content:'1B',rbi:0,r:1},
-  {game:2,opponent:'上智隼鷹',seq:4,inning:1,no:34,name:'劉禹樂',content:'K',rbi:0,r:1},
-  {game:2,opponent:'上智隼鷹',seq:4,inning:2,no:34,name:'劉禹樂',content:'GO',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:4,inning:3,no:35,name:'林賴奇',content:'1B',rbi:1,r:1},
-  {game:2,opponent:'上智隼鷹',seq:5,inning:1,no:82,name:'鄞圻睿',content:'GO',rbi:1,r:0},
-  {game:2,opponent:'上智隼鷹',seq:5,inning:3,no:82,name:'鄞圻睿',content:'1B',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:5,inning:4,no:82,name:'鄞圻睿',content:'1B',rbi:1,r:0},
-  {game:2,opponent:'上智隼鷹',seq:6,inning:1,no:15,name:'陳冠安',content:'K',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:6,inning:3,no:15,name:'陳冠安',content:'FO_內',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:7,inning:2,no:77,name:'林承熙',content:'BB',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:7,inning:3,no:77,name:'林承熙',content:'GO',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:8,inning:2,no:72,name:'張世昀',content:'K',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:8,inning:3,no:72,name:'張世昀',content:'K',rbi:0,r:0},
-  {game:2,opponent:'上智隼鷹',seq:9,inning:2,no:99,name:'張郁晨',content:'K',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:1,inning:1,no:8,name:'何天浩',content:'K',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:1,inning:2,no:8,name:'何天浩',content:'1B',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:1,inning:4,no:8,name:'何天浩',content:'3B',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:2,inning:1,no:98,name:'朱彥宇',content:'E_內',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:2,inning:2,no:98,name:'朱彥宇',content:'2B',rbi:2,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:2,inning:4,no:98,name:'朱彥宇',content:'1B',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:3,inning:1,no:9,name:'蕭沛庭',content:'BB',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:3,inning:2,no:9,name:'蕭沛庭',content:'HR_內',rbi:1,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:3,inning:4,no:9,name:'蕭沛庭',content:'1B',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:4,inning:1,no:34,name:'劉禹樂',content:'K',rbi:0,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:4,inning:2,no:34,name:'劉禹樂',content:'GO',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:4,inning:4,no:35,name:'林賴奇',content:'1B',rbi:1,r:1},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:5,inning:1,no:82,name:'鄞圻睿',content:'GO',rbi:1,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:5,inning:3,no:82,name:'鄞圻睿',content:'1B',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:5,inning:4,no:82,name:'鄞圻睿',content:'1B',rbi:1,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:6,inning:1,no:15,name:'陳冠安',content:'K',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:6,inning:3,no:15,name:'陳冠安',content:'FO_內',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:7,inning:2,no:77,name:'林承熙',content:'BB',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:7,inning:3,no:77,name:'林承熙',content:'GO',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:8,inning:2,no:72,name:'張世昀',content:'K',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:8,inning:3,no:72,name:'張世昀',content:'K',rbi:0,r:0},
+  {game:2,team:'好棒河馬',opponent:'上智隼鷹',seq:9,inning:2,no:99,name:'張郁晨',content:'K',rbi:0,r:1},
   {game:2,opponent:'上智隼鷹',seq:9,inning:4,no:26,name:'莊閔程',content:'K',rbi:0,r:0},
   // 場次3 vs 竹北雷爵B
   {game:3,opponent:'竹北雷爵B',seq:1,inning:1,no:64,name:'黃晨睿',content:'BB',rbi:0,r:0},
@@ -2774,7 +3433,7 @@ const BATTING_DATA = [
   // 場次5 vs 竹北雷爵A
   {game:5,opponent:'竹北雷爵A',seq:1,inning:1,no:64,name:'黃晨睿',content:'BB',rbi:0,r:1},
   {game:5,opponent:'竹北雷爵A',seq:1,inning:2,no:64,name:'黃晨睿',content:'2B',rbi:0,r:1},
-  {game:5,opponent:'竹北雷爵A',seq:1,inning:3,no:34,name:'劉禹樂',content:'K',rbi:0,r:0},
+  {game:5,opponent:'竹北雷爵A',seq:1,inning:4,no:34,name:'劉禹樂',content:'K',rbi:0,r:0},
   {game:5,opponent:'竹北雷爵A',seq:2,inning:1,no:98,name:'朱彥宇',content:'1B',rbi:0,r:1},
   {game:5,opponent:'竹北雷爵A',seq:2,inning:2,no:98,name:'朱彥宇',content:'1B',rbi:1,r:0},
   {game:5,opponent:'竹北雷爵A',seq:3,inning:1,no:9,name:'蕭沛庭',content:'3B',rbi:2,r:1},
@@ -2794,10 +3453,10 @@ const BATTING_DATA = [
   // 場次6 vs 活力社區
   {game:6,opponent:'活力社區',seq:1,inning:1,no:9,name:'蕭沛庭',content:'HP',rbi:0,r:1},
   {game:6,opponent:'活力社區',seq:1,inning:2,no:9,name:'蕭沛庭',content:'1B',rbi:0,r:1},
-  {game:6,opponent:'活力社區',seq:1,inning:3,no:9,name:'蕭沛庭',content:'FO_內',rbi:0,r:0},
+  {game:6,opponent:'活力社區',seq:1,inning:4,no:9,name:'蕭沛庭',content:'FO_內',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:2,inning:1,no:98,name:'朱彥宇',content:'FO_內',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:2,inning:2,no:98,name:'朱彥宇',content:'E_內',rbi:0,r:1},
-  {game:6,opponent:'活力社區',seq:2,inning:3,no:98,name:'朱彥宇',content:'K',rbi:0,r:0},
+  {game:6,opponent:'活力社區',seq:2,inning:4,no:98,name:'朱彥宇',content:'K',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:3,inning:1,no:50,name:'陳昱瑄',content:'FO_內',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:3,inning:2,no:50,name:'陳昱瑄',content:'3B',rbi:2,r:0},
   {game:6,opponent:'活力社區',seq:3,inning:5,no:72,name:'張世昀',content:'1B',rbi:0,r:0},
@@ -2806,17 +3465,180 @@ const BATTING_DATA = [
   {game:6,opponent:'活力社區',seq:4,inning:5,no:64,name:'黃晨睿',content:'FC',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:5,inning:1,no:82,name:'鄞圻睿',content:'E_內',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:5,inning:3,no:82,name:'鄞圻睿',content:'K',rbi:0,r:0},
-  {game:6,opponent:'活力社區',seq:5,inning:4,no:15,name:'陳冠安',content:'K',rbi:0,r:0},
+  {game:6,opponent:'活力社區',seq:5,inning:5,no:15,name:'陳冠安',content:'K',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:6,inning:1,no:81,name:'陳柏呈',content:'E_內',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:6,inning:3,no:81,name:'陳柏呈',content:'1B',rbi:0,r:0},
-  {game:6,opponent:'活力社區',seq:6,inning:4,no:81,name:'陳柏呈',content:'FO_內',rbi:0,r:0},
+  {game:6,opponent:'活力社區',seq:6,inning:5,no:81,name:'陳柏呈',content:'FO_內',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:7,inning:1,no:35,name:'林賴奇',content:'K',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:7,inning:3,no:35,name:'林賴奇',content:'K',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:8,inning:2,no:77,name:'林承熙',content:'GO',rbi:0,r:0},
   {game:6,opponent:'活力社區',seq:8,inning:3,no:77,name:'林承熙',content:'FO_內',rbi:0,r:0},
-  {game:6,opponent:'活力社區',seq:9,inning:2,no:26,name:'莊閔程',content:'GO',rbi:0,r:0},
-  {game:6,opponent:'活力社區',seq:9,inning:4,no:99,name:'張郁晨',content:'GO',rbi:0,r:0},
+  {game:6,team:'好棒河馬',opponent:'活力社區',seq:9,inning:2,no:26,name:'莊閔程',content:'GO',rbi:0,r:0},
+  {game:6,team:'好棒河馬',opponent:'活力社區',seq:9,inning:4,no:99,name:'張郁晨',content:'GO',rbi:0,r:0},
+  // ===== U8 泰山河馬 =====
+  // U8場次1 vs 竹北雷爵
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:1,inning:1,no:6,name:'陳曄',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:1,inning:2,no:6,name:'陳曄',content:'1B',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:1,inning:3,no:6,name:'陳曄',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:1,inning:4,no:6,name:'陳曄',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:2,inning:1,no:91,name:'林倬安',content:'K',rbi:0,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:2,inning:2,no:91,name:'林倬安',content:'2B',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:2,inning:3,no:91,name:'林倬安',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:2,inning:4,no:91,name:'林倬安',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:1,no:18,name:'許少澄',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:2,no:18,name:'許少澄',content:'1B',rbi:1,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:3,no:18,name:'許少澄',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:3,inning:4,no:18,name:'許少澄',content:'GO',rbi:1,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:4,inning:1,no:23,name:'吳倚墨',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:4,inning:2,no:23,name:'吳倚墨',content:'1B',rbi:1,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:4,inning:3,no:23,name:'吳倚墨',content:'FC',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:4,inning:4,no:23,name:'吳倚墨',content:'1B',rbi:1,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:5,inning:1,no:17,name:'楊定侖',content:'2B',rbi:1,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:5,inning:2,no:17,name:'楊定侖',content:'1B',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:5,inning:3,no:17,name:'楊定侖',content:'1B_內',rbi:1,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:5,inning:4,no:17,name:'楊定侖',content:'2B',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:6,inning:1,no:65,name:'陳豫澄',content:'GO',rbi:1,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:6,inning:2,no:65,name:'陳豫澄',content:'E_內',rbi:1,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:6,inning:3,no:65,name:'陳豫澄',content:'GO',rbi:0,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:6,inning:4,no:65,name:'陳豫澄',content:'FC',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:7,inning:1,no:26,name:'葉羿頡',content:'FO_內',rbi:0,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:7,inning:2,no:26,name:'葉羿頡',content:'E_內',rbi:1,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:7,inning:3,no:26,name:'葉羿頡',content:'K',rbi:0,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:7,inning:4,no:26,name:'葉羿頡',content:'E_內',rbi:1,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:8,inning:1,no:15,name:'陳冠安',content:'HR_內',rbi:1,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:8,inning:2,no:15,name:'陳冠安',content:'1B',rbi:2,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:8,inning:3,no:9,name:'張郁晨',content:'E_內',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:8,inning:4,no:9,name:'張郁晨',content:'1B',rbi:0,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:9,inning:1,no:98,name:'朱彥宇',content:'3B',rbi:0,r:1},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:9,inning:2,no:98,name:'朱彥宇',content:'1B',rbi:1,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:9,inning:3,no:98,name:'朱彥宇',content:'2B',rbi:0,r:0},
+  {game:7,team:'泰山河馬',opponent:'竹北雷爵',seq:9,inning:4,no:98,name:'朱彥宇',content:'1B',rbi:1,r:0},
+  // U8場次2 vs 信義飛燕
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:1,inning:1,no:6,name:'陳曄',content:'E_內',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:1,inning:2,no:6,name:'陳曄',content:'GO',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:1,inning:3,no:6,name:'陳曄',content:'1B',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:1,inning:4,no:6,name:'陳曄',content:'GO',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:2,inning:1,no:91,name:'林倬安',content:'1B_內',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:2,inning:2,no:91,name:'林倬安',content:'K',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:2,inning:3,no:91,name:'林倬安',content:'FC',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:2,inning:4,no:91,name:'林倬安',content:'K',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:3,inning:1,no:18,name:'許少澄',content:'FC',rbi:1,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:3,inning:2,no:18,name:'許少澄',content:'1B',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:3,inning:3,no:18,name:'許少澄',content:'FC',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:3,inning:4,no:18,name:'許少澄',content:'E_內',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:4,inning:1,no:26,name:'葉羿頡',content:'GO',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:4,inning:2,no:26,name:'葉羿頡',content:'1B',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:4,inning:3,no:26,name:'葉羿頡',content:'1B',rbi:1,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:4,inning:4,no:26,name:'葉羿頡',content:'1B_內',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:5,inning:1,no:23,name:'吳倚墨',content:'1B',rbi:1,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:5,inning:2,no:23,name:'吳倚墨',content:'FC',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:5,inning:3,no:23,name:'吳倚墨',content:'E_內',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:5,inning:4,no:23,name:'吳倚墨',content:'GO',rbi:1,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:6,inning:1,no:65,name:'陳豫澄',content:'1B_內',rbi:1,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:6,inning:2,no:65,name:'陳豫澄',content:'FC',rbi:1,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:6,inning:3,no:65,name:'陳豫澄',content:'1B_內',rbi:2,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:6,inning:4,no:65,name:'陳豫澄',content:'K',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:7,inning:1,no:9,name:'張郁晨',content:'2B',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:7,inning:2,no:15,name:'陳冠安',content:'2B',rbi:0,r:1},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:7,inning:3,no:15,name:'陳冠安',content:'1B',rbi:1,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:8,inning:1,no:17,name:'楊定侖',content:'E_內',rbi:1,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:8,inning:2,no:17,name:'楊定侖',content:'FO_內',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:8,inning:3,no:17,name:'楊定侖',content:'GO',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:9,inning:1,no:98,name:'朱彥宇',content:'E_內',rbi:0,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:9,inning:2,no:98,name:'朱彥宇',content:'1B',rbi:2,r:0},
+  {game:8,team:'泰山河馬',opponent:'信義飛燕',seq:9,inning:3,no:98,name:'朱彥宇',content:'FO_內',rbi:0,r:0},
+  // U8場次3 vs 麋鹿社區T1
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:1,inning:1,no:6,name:'陳曄',content:'1B_內',rbi:0,r:1},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:1,inning:2,no:6,name:'陳曄',content:'FO_內',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:1,inning:3,no:6,name:'陳曄',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:1,inning:4,no:6,name:'陳曄',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:2,inning:1,no:65,name:'陳豫澄',content:'E_內',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:2,inning:2,no:65,name:'陳豫澄',content:'E_內',rbi:0,r:1},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:2,inning:3,no:65,name:'陳豫澄',content:'K',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:2,inning:4,no:65,name:'陳豫澄',content:'FO_內',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:3,inning:1,no:91,name:'林倬安',content:'FC',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:3,inning:2,no:91,name:'林倬安',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:3,inning:3,no:99,name:'盧洆言',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:3,inning:4,no:99,name:'盧洆言',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:4,inning:1,no:26,name:'葉羿頡',content:'FC',rbi:1,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:4,inning:2,no:26,name:'葉羿頡',content:'K',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:4,inning:3,no:26,name:'葉羿頡',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:4,inning:4,no:26,name:'葉羿頡',content:'FO_內',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:5,inning:1,no:18,name:'許少澄',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:5,inning:2,no:18,name:'許少澄',content:'E_內',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:5,inning:3,no:18,name:'許少澄',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:5,inning:4,no:18,name:'許少澄',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:1,no:23,name:'吳倚墨',content:'FO_內',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:2,no:23,name:'吳倚墨',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:3,no:23,name:'吳倚墨',content:'K',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:6,inning:4,no:23,name:'吳倚墨',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:7,inning:1,no:9,name:'張郁晨',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:7,inning:2,no:9,name:'張郁晨',content:'FC',rbi:0,r:1},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:7,inning:3,no:9,name:'張郁晨',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:7,inning:4,no:9,name:'張郁晨',content:'1B',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:8,inning:1,no:17,name:'楊定侖',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:8,inning:2,no:17,name:'楊定侖',content:'1B',rbi:1,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:8,inning:3,no:17,name:'楊定侖',content:'FO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:8,inning:4,no:17,name:'楊定侖',content:'GO',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:9,inning:1,no:98,name:'朱彥宇',content:'2B',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:9,inning:2,no:98,name:'朱彥宇',content:'FC',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:9,inning:3,no:98,name:'朱彥宇',content:'FC',rbi:0,r:0},
+  {game:9,team:'泰山河馬',opponent:'麋鹿社區T1',seq:9,inning:4,no:98,name:'朱彥宇',content:'FO_內',rbi:0,r:0},
+  // U8場次4 vs KEEP棒球學院
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:1,no:6,name:'陳曄',content:'E_內',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:2,no:6,name:'陳曄',content:'K',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:3,no:6,name:'陳曄',content:'1B_內',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:1,inning:4,no:6,name:'陳曄',content:'K',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:2,inning:1,no:18,name:'許少澄',content:'FC',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:2,inning:2,no:18,name:'許少澄',content:'E_內',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:2,inning:3,no:18,name:'許少澄',content:'E_內',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:2,inning:4,no:18,name:'許少澄',content:'E_內',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:3,inning:1,no:99,name:'盧洆言',content:'1B',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:3,inning:2,no:91,name:'林倬安',content:'E_內',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:3,inning:3,no:91,name:'林倬安',content:'GO',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:3,inning:4,no:91,name:'林倬安',content:'2B',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:4,inning:1,no:26,name:'葉羿頡',content:'FC',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:4,inning:2,no:26,name:'葉羿頡',content:'2B',rbi:1,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:4,inning:3,no:26,name:'葉羿頡',content:'K',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:4,inning:4,no:26,name:'葉羿頡',content:'FC',rbi:1,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:5,inning:1,no:65,name:'陳豫澄',content:'FO_內',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:5,inning:2,no:65,name:'陳豫澄',content:'E_內',rbi:1,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:5,inning:3,no:65,name:'陳豫澄',content:'FC',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:5,inning:4,no:65,name:'陳豫澄',content:'E_內',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:6,inning:1,no:23,name:'吳倚墨',content:'1B_內',rbi:2,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:6,inning:2,no:23,name:'吳倚墨',content:'1B_內',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:6,inning:3,no:23,name:'吳倚墨',content:'1B_內',rbi:1,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:6,inning:4,no:23,name:'吳倚墨',content:'FC',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:7,inning:1,no:9,name:'張郁晨',content:'1B',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:7,inning:2,no:9,name:'張郁晨',content:'1B',rbi:1,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:7,inning:3,no:9,name:'張郁晨',content:'E_內',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:7,inning:4,no:9,name:'張郁晨',content:'FC',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:8,inning:1,no:17,name:'楊定侖',content:'2B',rbi:1,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:8,inning:2,no:17,name:'楊定侖',content:'E_內',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:8,inning:3,no:17,name:'楊定侖',content:'1B',rbi:1,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:8,inning:4,no:17,name:'楊定侖',content:'2B',rbi:0,r:1},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:9,inning:1,no:98,name:'朱彥宇',content:'FC',rbi:1,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:9,inning:2,no:98,name:'朱彥宇',content:'1B',rbi:2,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:9,inning:3,no:98,name:'朱彥宇',content:'2B',rbi:0,r:0},
+  {game:10,team:'泰山河馬',opponent:'KEEP棒球學院',seq:9,inning:4,no:98,name:'朱彥宇',content:'E_內',rbi:0,r:0},
 ];
+
+// ★ 共用：依「當前球隊篩選後資料」計算打擊場次相對標籤（第1場、第2場…）
+// 解決泰山 game 7~10 顯示「第7~10場」的問題，統一換算為相對序號
+function buildBatGameLabelMap(){
+  const fbd=getFilteredBattingData();
+  const gameNums=[...new Set(fbd.map(d=>d.game))].sort((a,b)=>a-b);
+  const oppMap={};
+  fbd.forEach(d=>{ if(!oppMap[d.game]) oppMap[d.game]=d.opponent||''; });
+  const m={};
+  gameNums.forEach((g,idx)=>{
+    const relNo=idx+1;
+    const opp=oppMap[g]?` vs ${oppMap[g]}`:
+      (GAME_LABELS[g]?GAME_LABELS[g].replace(/^第\d+場/,''):'');
+    m[g]=`第${relNo}場${opp}`;
+  });
+  return m;
+}
 
 function getBatBadgeClass(content){
   if(!content||content==='—') return 'hitnone';
@@ -2843,15 +3665,42 @@ function getBatLabel(content){
 function initBattingSelects(){
   const gSel=document.getElementById('bat-game-sel');
   if(!gSel) return;
-  const gameNums=[...new Set(BATTING_DATA.map(d=>d.game))].sort((a,b)=>a-b);
+  // 依目前球隊篩選打擊資料
+  const fbd=getFilteredBattingData();
+
+  // ── 場次選單：用相對場次序號（第1場、第2場…），避免顯示全域 game 編號（如7~10）──
+  const gameNums=[...new Set(fbd.map(d=>d.game))].sort((a,b)=>a-b);
+  // 從篩選後的資料中找到每場對手名稱
+  const gameOpponent={};
+  fbd.forEach(d=>{ if(!gameOpponent[d.game]) gameOpponent[d.game]=d.opponent||''; });
   gSel.innerHTML='<option value="0">🏆 全隊累積</option>'+
-    gameNums.map(g=>`<option value="${g}">${GAME_LABELS[g]||'第'+g+'場'}</option>`).join('');
+    gameNums.map((g,idx)=>{
+      const relNo=idx+1; // 相對場次序號（從1開始）
+      const opp=gameOpponent[g]?` vs ${gameOpponent[g]}`:
+            (GAME_LABELS[g]?GAME_LABELS[g].replace(/^第\d+場/,''):'');
+      return `<option value="${g}">第${relNo}場${opp}</option>`;
+    }).join('');
+
+  // ── 球員選單：同一球隊選擇狀態下不顯示隊名標籤（避免「#8 何天浩 [好棒河馬]」重複感）──
   const pSel=document.getElementById('bat-player-sel');
-  const playerMap={};
-  BATTING_DATA.forEach(d=>{playerMap[d.no]=d.name;});
+  // 判斷目前篩選後是否只有單一球隊（單隊模式不顯示隊名）
+  const teamsInFbd=[...new Set(fbd.map(d=>d.team||'好棒河馬'))];
+  const isSingleTeam=teamsInFbd.length<=1;
+  // 用 "name|||team" 作唯一識別鍵，避免跨球隊同名球員混在一起
+  const playerMap={}; // key="name|||normalizedTeam", value=顯示用背號
+  fbd.forEach(d=>{
+    const t=d.team||'好棒河馬'; // 正規化 team
+    const k=`${d.name}|||${t}`;
+    if(!playerMap[k]) playerMap[k]=d.no;
+  });
+  // 依背號排序；單隊模式不加 [隊名] 標籤
   pSel.innerHTML='<option value="0">🏆 全隊累積</option>'+
-    Object.entries(playerMap).sort((a,b)=>+a[0]-+b[0])
-      .map(([no,name])=>`<option value="${no}">#${no} ${name}</option>`).join('');
+    Object.entries(playerMap).sort((a,b)=>+a[1]-+b[1])
+      .map(([key,no])=>{
+        const [name,team]=key.split('|||');
+        const teamLabel=(!isSingleTeam && team)?` [${team}]`:'';
+        return `<option value="${encodeURIComponent(key)}">#${no} ${name}${teamLabel}</option>`;
+      }).join('');
 }
 // ── 逐打席時序排序：處理局間打序接續及 9→1 循環翻轉 ────────────────────
 // 棒球規則：打序固定為第1~9棒，每局結束後下一局從上一局最後打序的「下一棒」
@@ -2905,6 +3754,16 @@ function switchBatViewMode(mode){
   renderBatting();
 }
 function renderBatting(){
+  const fbd=getFilteredBattingData(); // ★ 依球隊篩選
+  // ── 建立相對場次標籤對照表（第1場、第2場…，避免顯示全域 game 編號如 7~10）──
+  const _fbdGameNums=[...new Set(fbd.map(d=>d.game))].sort((a,b)=>a-b);
+  const _fbdGameOpp={};
+  fbd.forEach(d=>{ if(!_fbdGameOpp[d.game]) _fbdGameOpp[d.game]=d.opponent||''; });
+  const _gameRelLabel={}; // {game: '第N場 vs XXX'}
+  _fbdGameNums.forEach((g,idx)=>{
+    _gameRelLabel[g]=`第${idx+1}場${_fbdGameOpp[g]?' vs '+_fbdGameOpp[g]:''}`;
+  });
+  const getBatGameLbl=g=>_gameRelLabel[g]||GAME_LABELS[g]||`第${g}場`;
   const viewMode=document.getElementById('bat-view-mode').value;
   const tbody=document.getElementById('bat-tbody');
   tbody.innerHTML='';
@@ -2913,17 +3772,17 @@ function renderBatting(){
     const selGame=+document.getElementById('bat-game-sel').value;
     if(selGame===0){
       // seq=0 代表彙整格式上傳（無逐打席明細），改以球員+打擊內容列表呈現
-      const hasDetail=BATTING_DATA.some(d=>d.seq>0);
-      const gameKeys=[...new Set(BATTING_DATA.map(d=>d.game))].sort((a,b)=>a-b);
+      const hasDetail=fbd.some(d=>d.seq>0);
+      const gameKeys=[...new Set(fbd.map(d=>d.game))].sort((a,b)=>a-b);
       if(hasDetail){
-        const allSeqs=[...new Set(BATTING_DATA.filter(d=>d.seq>0).map(d=>d.seq))].sort((a,b)=>a-b);
+        const allSeqs=[...new Set(fbd.filter(d=>d.seq>0).map(d=>d.seq))].sort((a,b)=>a-b);
         thead.innerHTML='<th style="background:#a04000;">打序</th>'+
-          gameKeys.map((g,i)=>`<th class="${i>0?'inning-sep':''}" style="background:#a04000;white-space:nowrap;">${GAME_LABELS[g]||'第'+g+'場'}</th>`).join('');
+          gameKeys.map((g,i)=>`<th class="${i>0?'inning-sep':''}" style="background:#a04000;white-space:nowrap;">${getBatGameLbl(g)}</th>`).join('');
         allSeqs.forEach(seq=>{
           const tr=document.createElement('tr');
           let html=`<td class="seq-cell">第${seq}棒</td>`;
           gameKeys.forEach((g,i)=>{
-            const entries=BATTING_DATA.filter(d=>d.seq===seq&&d.game===g);
+            const entries=fbd.filter(d=>d.seq===seq&&d.game===g);
             const cls=i>0?'inning-sep':'';
             if(entries.length){
               const badges=entries.map(e=>{
@@ -2942,11 +3801,11 @@ function renderBatting(){
         });
       }else{
         // 彙整格式：無打序/局數，改用球員×場次表格
-        const playerKeys=[...new Set(BATTING_DATA.map(d=>d.no))].sort((a,b)=>a-b);
+        const playerKeys=[...new Set(fbd.map(d=>d.no))].sort((a,b)=>a-b);
         thead.innerHTML='<th style="background:#a04000;">背號</th><th style="background:#a04000;">姓名</th>'+
-          gameKeys.map((g,i)=>`<th class="${i>0?'inning-sep':''}" style="background:#a04000;white-space:nowrap;">${GAME_LABELS[g]||'第'+g+'場'}</th>`).join('');
+          gameKeys.map((g,i)=>`<th class="${i>0?'inning-sep':''}" style="background:#a04000;white-space:nowrap;">${getBatGameLbl(g)}</th>`).join('');
         playerKeys.forEach(no=>{
-          const pRows=BATTING_DATA.filter(d=>d.no===no);
+          const pRows=fbd.filter(d=>d.no===no);
           const pName=pRows[0]?.name||'';
           const tr=document.createElement('tr');
           let html=`<td style="font-weight:700;color:#a04000;">#${no}</td><td style="font-weight:600;">${pName}</td>`;
@@ -2970,7 +3829,7 @@ function renderBatting(){
         });
       }
     }else{
-      const rows=BATTING_DATA.filter(d=>d.game===selGame);
+      const rows=fbd.filter(d=>d.game===selGame);
       const hasDetail=rows.some(d=>d.seq>0);
       if(hasDetail){
         // ── 依場次查看（特定場次）：改為逐打席時序清單，正確呈現「打序不歸零、跨局接續」──
@@ -3035,13 +3894,17 @@ function renderBatting(){
       }
     }
   }else{
-    const selNo=+document.getElementById('bat-player-sel').value;
-    if(selNo===0){
+    // ★ Bug2修正：改以球員姓名（encodedName）作為識別，支援同一球員在不同球隊使用不同背號
+    const selPlayerRaw=document.getElementById('bat-player-sel').value;
+    // selPlayerRaw 格式為 "name|||team"（encodeURIComponent）
+    const selPlayerKey=selPlayerRaw==='0'?null:decodeURIComponent(selPlayerRaw);
+    const [selPlayerName,selPlayerTeam]=selPlayerKey?selPlayerKey.split('|||'):[null,null];
+    if(!selPlayerKey){
       // 全隊累積：無論靜態或彙整上傳，一律顯示 場次/局數/打序/背號/姓名/打擊內容/打點/得分
       // seq=0 或 inning=0 以「—」顯示（彙整上傳格式無逐打席明細）
       thead.innerHTML='<th style="background:#a04000;">場次</th><th style="background:#a04000;">局數</th><th style="background:#a04000;">打序</th><th style="background:#a04000;">背號</th><th style="background:#a04000;">姓名</th><th style="background:#a04000;">打擊內容</th><th style="background:#a04000;">打點</th><th style="background:#a04000;">得分</th>';
       // 依真實比賽時序排序：局數優先，局內依「接續前局最後打序」的循環順序
-      const allRows=sortBatDetailsChronologically([...BATTING_DATA]);
+      const allRows=sortBatDetailsChronologically([...fbd]);
       if(!allRows.length){
         tbody.innerHTML='<tr><td colspan="8" style="color:#999;padding:20px;">目前無打擊記錄</td></tr>';
       }else{
@@ -3049,7 +3912,7 @@ function renderBatting(){
           const bc=getBatBadgeClass(e.content);
           const lbl=getBatLabel(e.content);
           const tr=document.createElement('tr');
-          tr.innerHTML=`<td style="text-align:left;font-size:.82rem;">${GAME_LABELS[e.game]||'第'+e.game+'場'}</td>`+
+          tr.innerHTML=`<td style="text-align:left;font-size:.82rem;">${getBatGameLbl(e.game)}</td>`+
             `<td>${(e.inning>0)?'第'+e.inning+'局':'—'}</td>`+
             `<td class="seq-cell">${e.seq>0?'第'+e.seq+'棒':'—'}</td>`+
             `<td style="font-weight:700;color:#a04000;">#${e.no}</td><td style="font-weight:600;">${e.name}</td>`+
@@ -3060,21 +3923,22 @@ function renderBatting(){
         });
       }
     }else{
-      // 特定球員：同一球員每局只出現一次，依場次→局數排列
-      // 特定球員：依場次→局數→seq 排列，直接顯示 seq（1~9，棒球打序）
-      const rows=BATTING_DATA.filter(d=>d.no===selNo);
-      thead.innerHTML='<th style="background:#a04000;">場次</th><th style="background:#a04000;">局數</th><th style="background:#a04000;">打序</th><th style="background:#a04000;">打擊內容</th><th style="background:#a04000;">打點</th><th style="background:#a04000;">得分</th>';
+      // ★ Bug2修正：特定球員 — 以姓名+球隊篩選，避免跨球隊同名球員混算
+      // ★ Bug6修正：好棒河馬的 game3-6 記錄 team 欄位可能為 undefined，視為好棒河馬
+      const rows=fbd.filter(d=>d.name===selPlayerName && (d.team||'好棒河馬')===(selPlayerTeam||'好棒河馬'));
+      thead.innerHTML='<th style="background:#a04000;">場次</th><th style="background:#a04000;">局數</th><th style="background:#a04000;">打序</th><th style="background:#a04000;">背號</th><th style="background:#a04000;">打擊內容</th><th style="background:#a04000;">打點</th><th style="background:#a04000;">得分</th>';
       if(!rows.length){
-        tbody.innerHTML='<tr><td colspan="6" style="color:#999;padding:20px;">該球員本季無打擊記錄</td></tr>';
+        tbody.innerHTML='<tr><td colspan="7" style="color:#999;padding:20px;">該球員本季無打擊記錄</td></tr>';
         return;
       }
       rows.sort((a,b)=>a.game-b.game||a.inning-b.inning||a.seq-b.seq).forEach(e=>{
         const bc=getBatBadgeClass(e.content);
         const lbl=getBatLabel(e.content);
         const tr=document.createElement('tr');
-        tr.innerHTML=`<td style="text-align:left;font-size:.82rem;">${GAME_LABELS[e.game]||'第'+e.game+'場'}</td>`+
+        tr.innerHTML=`<td style="text-align:left;font-size:.82rem;">${getBatGameLbl(e.game)}</td>`+
           `<td>${(e.inning>0)?'第'+e.inning+'局':'—'}</td>`+
           `<td class="seq-cell">${e.seq>0?'第'+e.seq+'棒':'—'}</td>`+
+          `<td style="font-weight:700;color:#a04000;">#${e.no}</td>`+
           `<td><span class="bat-badge ${bc}">${lbl}</span></td>`+
           `<td>${e.rbi>0?'<span style="color:#c0392b;font-weight:700;">'+e.rbi+'</span>':e.rbi}</td>`+
           `<td>${e.r>0?'<span style="color:#27ae60;font-weight:700;">'+e.r+'</span>':e.r}</td>`;
@@ -3082,10 +3946,10 @@ function renderBatting(){
       });
     }
   }
-  const total=BATTING_DATA.length;
-  const hits=BATTING_DATA.filter(d=>['1B','1B_內','2B','3B','HR_內','HR'].includes(d.content)).length;
-  const totalRBI=BATTING_DATA.reduce((s,d)=>s+d.rbi,0);
-  const totalR=BATTING_DATA.reduce((s,d)=>s+d.r,0);
+  const total=fbd.length;
+  const hits=fbd.filter(d=>['1B','1B_內','2B','3B','HR_內','HR'].includes(d.content)).length;
+  const totalRBI=fbd.reduce((s,d)=>s+d.rbi,0);
+  const totalR=fbd.reduce((s,d)=>s+d.r,0);
   document.getElementById('bat-summary').textContent=
     `共 ${total} 筆打擊記錄｜安打 ${hits} 支｜累積打點 ${totalRBI}｜累積得分 ${totalR}`;
   // 每次 renderBatting 後重新跑比對與渲染
@@ -3096,16 +3960,27 @@ function renderBatting(){
 function renderBattingStats(){
   const container=document.getElementById('bat-stats-section');
   if(!container) return;
-  const allGameNums=[...new Set(BATTING_DATA.map(d=>d.game))].sort((a,b)=>a-b);
+  const fbd2=getFilteredBattingData();
+  const allGameNums=[...new Set(fbd2.map(d=>d.game))].sort((a,b)=>a-b);
   // 計算每位球員全 6 場累積統計
   const allPlayers=[];
   const isHit=c=>['1B','1B_內','2B','3B','HR','HR_內'].includes(c);
   const isAB =c=>!['BB','HP'].includes(c);
-  // 建立球員順序（依 no 排序）
-  const playerNos=[...new Set(BATTING_DATA.map(d=>d.no))].sort((a,b)=>a-b);
-  playerNos.forEach(no=>{
-    const rows=BATTING_DATA.filter(d=>d.no===no);
-    const name=rows[0].name;
+  // ★ Bug2修正：以姓名(name)作為唯一球員識別，同一球員在不同球隊使用不同背號時合併統計
+  // 顯示背號採「最近一筆記錄的背號」（可能因球隊不同而不同，故以姓名為準）
+  // ★ 以 "name|||team" 作為唯一球員識別鍵，避免跨球隊同名球員混算
+  const playerKeySet=[...new Set(fbd2.map(d=>`${d.name}|||${d.team||''}`))];
+  const playerFirstNo={};
+  fbd2.forEach(d=>{
+    const k=`${d.name}|||${d.team||''}`;
+    if(!playerFirstNo[k]) playerFirstNo[k]=d.no;
+  });
+  playerKeySet.sort((a,b)=>playerFirstNo[a]-playerFirstNo[b]);
+  playerKeySet.forEach(pkey=>{
+    const [pname, pteam]=pkey.split('|||');
+    const rows=fbd2.filter(d=>d.name===pname && (d.team||'')===(pteam||''));
+    const no=rows[0].no;
+    const name=pname;
     let ab=0,h=0,bb=0,k=0,rbi=0,r=0,b1=0,b2=0,b3=0,hr=0;
     rows.forEach(d=>{
       const c=d.content||'';
@@ -3504,7 +4379,7 @@ function renderDefAwards(){
   // 回傳: [[{no,name,tc,fpct}, ...], [...], [...]] — 最多3個名次組
   function calcGroups(posFilter){
     const map={};
-    DEFENSE_DATA.forEach(d=>{
+    getFilteredDefenseData().forEach(d=>{
       if(posFilter && d.pos!==posFilter) return;
       if(!map[d.no]) map[d.no]={no:d.no,name:d.name,tc:0,err:0};
       map[d.no].tc++;
