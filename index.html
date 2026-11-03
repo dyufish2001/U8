@@ -383,6 +383,12 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
 .defaults-refresh-toast{display:none;align-items:center;gap:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 16px;font-size:.85rem;color:#2e7d32;font-weight:600;margin-bottom:14px;}
 .defaults-refresh-toast.show{display:flex;animation:fadeInUp .3s ease;}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.btn-defaults-sync{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(39,174,96,.85);border:2px solid rgba(255,255,255,.5);border-radius:10px;color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .22s;white-space:nowrap;letter-spacing:.03em;backdrop-filter:blur(4px);}
+.btn-defaults-sync:hover{background:rgba(30,132,73,.95);border-color:rgba(255,255,255,.8);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.3);}
+.btn-defaults-sync:active{transform:translateY(0);}
+.btn-defaults-sync.loading{opacity:.7;cursor:not-allowed;pointer-events:none;}
+.defaults-sync-toast{display:none;align-items:center;gap:8px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:8px;padding:10px 16px;font-size:.85rem;color:#1a5c2a;font-weight:600;margin-bottom:14px;}
+.defaults-sync-toast.show{display:flex;animation:fadeInUp .3s ease;}
 .defaults-tab-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
 .def-section-btn{padding:9px 18px;border:2px solid #d0d8e4;border-radius:8px;background:#f8fafd;color:#555;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;}
 .def-section-btn.active{background:#2c3e50;color:#fff;border-color:#2c3e50;}
@@ -831,6 +837,12 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
     <button class="btn-defaults-refresh" id="btn-defaults-refresh" onclick="refreshDefaultsData()">
       <span class="refresh-icon">🔄</span> 即時查詢
     </button>
+    <button class="btn-defaults-sync" id="btn-defaults-sync" onclick="syncDefaultsFromTab()">
+      <span>💾</span> 更新預設數據
+    </button>
+  </div>
+  <div class="defaults-sync-toast" id="defaults-sync-toast">
+    ✅ 預設數據已更新！打擊 <strong id="sync-toast-bd-cnt"></strong> 筆・守備 <strong id="sync-toast-dd-cnt"></strong> 筆 已同步為「資料上傳」還原基準。
   </div>
   <!-- 查詢成功提示 -->
   <div class="defaults-refresh-toast" id="defaults-refresh-toast">
@@ -870,7 +882,7 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
       <div style="overflow-x:auto;">
         <table class="defaults-table" id="defaults-teamgames-table">
           <thead><tr>
-            <th>場次</th><th>打數 AB</th><th>安打 H</th><th>保送 BB</th><th>三振 K</th>
+            <th>場次</th><th>對手</th><th>打數 AB</th><th>安打 H</th><th>保送 BB</th><th>三振 K</th>
             <th>打點 RBI</th><th>得分 R</th><th>一壘打</th><th>二壘打</th><th>三壘打</th><th>全壘打</th>
             <th>AVG</th><th>OBP</th><th>SLG</th>
           </tr></thead>
@@ -1832,7 +1844,11 @@ function parseNewFormat(rows,fname){
       const nmCell=grp.name>=0?row[grp.name+(inn-1)]:'';
       const nm=String(nmCell===undefined||nmCell===''?'':nmCell).trim();
       const ctCell=row[grp.content+(inn-1)];
-      const ct=String(ctCell===undefined||ctCell===''?'':ctCell).trim();
+      // ★ 正規化：去頭尾空白 + 全形底線→半形 + 全形字元轉半形常見代碼，確保與 HIT_CODE_MAP key 完全一致
+      const ct=String(ctCell===undefined||ctCell===''?'':ctCell).trim()
+        .replace(/\uFF3F/g,'_')   // 全形底線 ＿ → 半形 _
+        .replace(/\u00A0/g,' ')  // 不斷行空白 → 一般空白
+        .trim();
       const rbiCell=grp.rbi>=0?row[grp.rbi+(inn-1)]:0;
       const rbiV=parseInt(String(rbiCell===undefined||rbiCell===''?0:rbiCell))||0;
       const rCell=grp.r>=0?row[grp.r+(inn-1)]:0;
@@ -1842,7 +1858,7 @@ function parseNewFormat(rows,fname){
         if(!Array.isArray(window._batDetailBuf)) window._batDetailBuf=[];
         window._batDetailBuf.push({game:gm,no,name:nm||String(no),seq,inning:inn,content:ct,rbi:rbiV,r:rV,team:lastTeam});
       }
-      const key=`${gm}_${no}`;
+      const key=`${lastTeam}_${gm}_${no}`;
       if(!bdMap[key]) bdMap[key]={gm,no,name:nm||String(no),seq,ab:0,h:0,bb:0,hp:0,k:0,b1:0,b2:0,b3:0,hr:0,rbi:0,r:0,team:lastTeam};
       if(nm) bdMap[key].name=nm;
       const info=HIT_CODE_MAP[ct]||HIT_CODE_MAP[ct.toUpperCase()];
@@ -1861,7 +1877,7 @@ function parseNewFormat(rows,fname){
   // ── 後補修正：若 seq=0，嘗試從 bdMap 取得同一場次+球員的打序 ──
   rawBuf.forEach(d=>{
     if(d.seq===0){
-      const e=bdMap[`${d.game}_${d.no}`];
+      const e=bdMap[`${d.team||''}_${d.game}_${d.no}`];
       if(e&&e.seq>0) d.seq=e.seq;
     }
   });
@@ -1914,15 +1930,17 @@ function showPreviewBD(bd,fname){
   const plSet=[...new Set(bd.map(d=>d.no))].sort((a,b)=>a-b);
   let html=`<div class="preview-info">✅ 解析成功「${fname||''}」— 共 <strong>${plSet.length}</strong> 位球員，<strong>${gmSet.length}</strong> 場賽事（新格式）</div>`;
   html+='<div class="preview-wrap"><table class="preview-table"><thead><tr>';
-  html+='<th>背號</th><th>姓名</th><th>場次</th><th>打數</th><th>安打</th><th>打率</th><th>打點</th><th>得分</th><th>1B</th><th>2B</th><th>3B</th><th>HR</th><th>BB</th><th>K</th><th>HP</th>';
+  html+='<th>球隊</th><th>背號</th><th>姓名</th><th>場次</th><th>打數</th><th>安打</th><th>打率</th><th>打點</th><th>得分</th><th>1B</th><th>2B</th><th>3B</th><th>HR</th><th>BB</th><th>K</th><th>HP</th>';
   html+='</tr></thead><tbody>';
   [...bd].sort((a,b)=>a.gm-b.gm||a.no-b.no).forEach(d=>{
     const avg=d.ab>0?(d.h/d.ab).toFixed(3):'---';
-    html+=`<tr><td>#${d.no}</td><td>${d.name}</td><td>#${d.gm}</td><td>${d.ab}</td><td>${d.h}</td>`;
+    html+=`<tr><td>${d.team||'—'}</td><td>#${d.no}</td><td>${d.name}</td><td>#${d.gm}</td><td>${d.ab}</td><td>${d.h}</td>`;
     html+=`<td style="color:#e67e22;font-weight:bold">${avg}</td><td>${d.rbi}</td><td>${d.r}</td>`;
     html+=`<td>${d.b1}</td><td>${d.b2}</td><td>${d.b3}</td><td>${d.hr}</td><td>${d.bb}</td><td>${d.k}</td><td>${d.hp}</td></tr>`;
   });
   html+='</tbody></table></div>';
+  // ★ 差異比較區塊（新格式 BD 彙整資料，依場次+背號+球隊彙整比對）
+  html+=buildBattingDiffHTML_BD(bd);
   document.getElementById('preview-area').innerHTML=html;
   document.getElementById('preview-sec').style.display='block';
   document.getElementById('apply-success').style.display='none';
@@ -1944,9 +1962,139 @@ function showPreview(pm,ng,fname){
     html+=`<td><strong>${tA}</strong></td><td><strong>${tH}</strong></td><td><strong style="color:#e67e22">${tA>0?(tH/tA).toFixed(3):'---'}</strong></td></tr>`;
   });
   html+='</tbody></table></div>';
+  // ★ 差異比較區塊（舊格式：用彙整資料與 BATTING_DATA 比對）
+  html+=buildBattingDiffHTML_old(pm);
   document.getElementById('preview-area').innerHTML=html;
   document.getElementById('preview-sec').style.display='block';
   document.getElementById('apply-success').style.display='none';
+}
+// ===== 打擊資料 diff 比較（上傳 vs 預設 BATTING_DATA）=====
+function buildBattingDiffHtml(uploadedBD){
+  // uploadedBD: 新格式陣列，每筆 {game,no,name,content,rbi,r,...}
+  // 比較鍵：game + no + name + seq + inning（若有）+ content
+  const makeKey=d=>`${d.game}|${d.no}|${d.name}|${d.seq||0}|${d.inning||0}|${d.content||''}`;
+  const oldMap=new Map(); BATTING_DATA.forEach(d=>{ const k=makeKey(d); oldMap.set(k,(oldMap.get(k)||0)+1); });
+  const newMap=new Map(); uploadedBD.forEach(d=>{ const k=makeKey(d); newMap.set(k,(newMap.get(k)||0)+1); });
+  const added=[],removed=[];
+  // 找新增（在 newMap 有但 oldMap 沒有，或數量增加）
+  uploadedBD.forEach(d=>{
+    const k=makeKey(d);
+    const oc=oldMap.get(k)||0; const nc=newMap.get(k)||0;
+    if(nc>oc) for(let i=0;i<nc-oc;i++) added.push(d);
+  });
+  // 找刪除（在 oldMap 有但 newMap 沒有，或數量減少）
+  BATTING_DATA.forEach(d=>{
+    const k=makeKey(d);
+    const oc=oldMap.get(k)||0; const nc=newMap.get(k)||0;
+    if(oc>nc) for(let i=0;i<oc-nc;i++) removed.push(d);
+  });
+  if(!added.length&&!removed.length){
+    return `<div style="margin-top:16px;padding:12px 16px;background:#e8f5e9;border-left:4px solid #27ae60;border-radius:6px;font-size:.9rem;color:#1a5c2a;">✅ <strong>與預設資料完全相同</strong>，無差異紀錄。</div>`;
+  }
+  let html=`<div style="margin-top:18px;">`;
+  html+=`<div style="font-size:1rem;font-weight:700;color:#005087;margin-bottom:8px;">📊 與預設資料差異清單 <span style="font-size:.82rem;font-weight:400;color:#666;">（新增 ${added.length} 筆 ／ 減少 ${removed.length} 筆）</span></div>`;
+  if(added.length){
+    html+=`<div style="margin-bottom:6px;font-weight:600;color:#1a7f5a;font-size:.88rem;">🟢 新增 ${added.length} 筆</div>`;
+    html+=`<div class="preview-wrap"><table class="preview-table"><thead><tr><th>場次</th><th>背號</th><th>姓名</th><th>打序</th><th>局次</th><th>打席內容</th><th>打點</th><th>得分</th></tr></thead><tbody>`;
+    added.slice(0,100).forEach(d=>{
+      html+=`<tr style="background:#f0fff4;"><td>#${d.game}</td><td>#${d.no}</td><td>${d.name}</td><td>${d.seq?'第'+d.seq+'棒':'—'}</td><td>${d.inning?'第'+d.inning+'局':'—'}</td><td style="font-weight:700;color:#1a7f5a;">${d.content||'—'}</td><td>${d.rbi||0}</td><td>${d.r||0}</td></tr>`;
+    });
+    if(added.length>100) html+=`<tr><td colspan="8" style="color:#999;font-style:italic;">...僅顯示前100筆</td></tr>`;
+    html+=`</tbody></table></div>`;
+  }
+  if(removed.length){
+    html+=`<div style="margin-top:12px;margin-bottom:6px;font-weight:600;color:#c0392b;font-size:.88rem;">🔴 減少 ${removed.length} 筆（預設有但上傳檔無）</div>`;
+    html+=`<div class="preview-wrap"><table class="preview-table"><thead><tr><th>場次</th><th>背號</th><th>姓名</th><th>打序</th><th>局次</th><th>打席內容</th><th>打點</th><th>得分</th></tr></thead><tbody>`;
+    removed.slice(0,100).forEach(d=>{
+      html+=`<tr style="background:#fff5f5;"><td>#${d.game}</td><td>#${d.no}</td><td>${d.name}</td><td>${d.seq?'第'+d.seq+'棒':'—'}</td><td>${d.inning?'第'+d.inning+'局':'—'}</td><td style="font-weight:700;color:#c0392b;">${d.content||'—'}</td><td>${d.rbi||0}</td><td>${d.r||0}</td></tr>`;
+    });
+    if(removed.length>100) html+=`<tr><td colspan="8" style="color:#999;font-style:italic;">...僅顯示前100筆</td></tr>`;
+    html+=`</tbody></table></div>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+// ★ 打擊差異比對函數：新格式（逐打席明細）
+function buildBattingDiffHTML_BD(newBD){
+  // newBD 格式：[{gm,no,name,team,ab,h,bb,k,hp,rbi,r,b1,b2,b3,hr}]
+  // BATTING_DATA 格式：[{game,no,name,team,content,rbi,r,seq,inning}]
+  // 策略：依「場次+背號+球隊」彙整 BATTING_DATA 統計，與 newBD 每筆比對
+  const makeKey=(team,no,gm)=>`${team||'好棒河馬'}|${no}|${gm}`;
+  // ★ 統一用 HIT_CODE_MAP 彙整（與 parseNewFormat 邏輯完全一致，避免因計算方式不同產生假差異）
+  const existMap={};
+  BATTING_DATA.forEach(d=>{
+    const k=makeKey(d.team,d.no,d.game);
+    if(!existMap[k]) existMap[k]={team:d.team||'好棒河馬',no:d.no,name:d.name,gm:d.game,ab:0,h:0,bb:0,k:0,hp:0,rbi:0,r:0,b1:0,b2:0,b3:0,hr:0};
+    const c=String(d.content||'').trim(); const e=existMap[k];
+    const info=HIT_CODE_MAP[c]||HIT_CODE_MAP[c.toUpperCase()];
+    if(info){
+      if(info.ab) e.ab++; if(info.h)  e.h++;
+      if(info.bb) e.bb++; if(info.hp) e.hp++;
+      if(info.k)  e.k++;  if(info.b1) e.b1++;
+      if(info.b2) e.b2++; if(info.b3) e.b3++;
+      if(info.hr) e.hr++;
+    } else if(c&&c!=='-') e.ab++; // 未知代碼仍計打數
+    e.rbi+=d.rbi||0; e.r+=d.r||0;
+  });
+  // 比對
+  const diffs=[]; const seenKeys=new Set();
+  newBD.forEach(n=>{
+    const k=makeKey(n.team,n.no,n.gm);
+    seenKeys.add(k);
+    const e=existMap[k];
+    const fields=['ab','h','bb','k','hp','rbi','r','b1','b2','b3','hr'];
+    const changed=fields.filter(f=>Number(n[f]||0)!==Number(e?e[f]:0));
+    if(!e) diffs.push({type:'add',team:n.team||'好棒河馬',no:n.no,name:n.name,gm:n.gm,changed:fields,n,e:null});
+    else if(changed.length) diffs.push({type:'change',team:n.team||'好棒河馬',no:n.no,name:n.name,gm:n.gm,changed,n,e});
+  });
+  Object.keys(existMap).forEach(k=>{ if(!seenKeys.has(k)){const e=existMap[k]; diffs.push({type:'del',team:e.team,no:e.no,name:e.name,gm:e.gm,changed:[],n:null,e});} });
+  return _renderBDDiffHtml(diffs);
+}
+function buildBattingDiffHTML_old(pm){
+  // pm 格式：{no:{no,name,games:{gIdx:[ab,h,bb,k,rbi,r,b1,b2,b3,hr]}}}
+  const existMap={};
+  BATTING_DATA.forEach(d=>{
+    const k=`${d.no}|${d.game}`;
+    if(!existMap[k]) existMap[k]={no:d.no,name:d.name,gm:d.game,ab:0,h:0,bb:0,k:0};
+    const c=d.content||''; const e=existMap[k];
+    if(IS_AB(c))e.ab++; if(IS_HIT(c))e.h++; if(c==='BB')e.bb++; if(c==='K')e.k++;
+  });
+  const diffs=[]; const seenKeys=new Set();
+  Object.values(pm).forEach(p=>{
+    Object.entries(p.games).forEach(([gIdx,g])=>{
+      const gm=parseInt(gIdx)+1; const k=`${p.no}|${gm}`; seenKeys.add(k);
+      const e=existMap[k];
+      const nAb=g[0],nH=g[1],nBb=g[2],nK=g[3];
+      const changed=[];
+      if(nAb!==(e?e.ab:0))changed.push('ab'); if(nH!==(e?e.h:0))changed.push('h');
+      if(nBb!==(e?e.bb:0))changed.push('bb'); if(nK!==(e?e.k:0))changed.push('k');
+      const n={ab:nAb,h:nH,bb:nBb,k:nK};
+      if(!e) diffs.push({type:'add',team:'好棒河馬',no:p.no,name:p.name,gm,changed:['ab','h','bb','k'],n,e:null});
+      else if(changed.length) diffs.push({type:'change',team:'好棒河馬',no:p.no,name:p.name,gm,changed,n,e});
+    });
+  });
+  return _renderBDDiffHtml(diffs);
+}
+function _renderBDDiffHtml(diffs){
+  if(!diffs.length) return `<div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:#e8f5e9;color:#2e7d32;font-size:.88rem;">✅ 與預設資料完全一致，無差異。</div>`;
+  const fieldLabel={ab:'打數',h:'安打',bb:'保送',k:'三振',hp:'觸身',rbi:'打點',r:'得分',b1:'一安',b2:'二安',b3:'三安',hr:'全壘打'};
+  const typeStyle={add:'background:#e8f5e9;color:#2e7d32;',change:'background:#fff3e0;color:#e65100;',del:'background:#fdecea;color:#c0392b;'};
+  const typeLabel={add:'🆕 新增',change:'✏️ 變更',del:'🗑️ 刪除'};
+  let adds=diffs.filter(d=>d.type==='add').length, chgs=diffs.filter(d=>d.type==='change').length, dels=diffs.filter(d=>d.type==='del').length;
+  let html=`<div style="margin-top:16px;">`;
+  html+=`<div style="font-weight:700;font-size:.95rem;color:#005087;margin-bottom:8px;">📊 與預設資料差異比較 <span style="font-weight:400;font-size:.82rem;color:#666;">（新增 ${adds} 筆 / 變更 ${chgs} 筆 / 刪除 ${dels} 筆）</span></div>`;
+  html+='<div style="overflow-x:auto;"><table class="preview-table"><thead><tr><th>類型</th><th>球隊</th><th>背號</th><th>姓名</th><th>場次</th><th>差異欄位</th></tr></thead><tbody>';
+  diffs.slice(0,100).forEach(d=>{
+    const diffCells=d.changed.map(f=>{
+      const oldV=d.e?d.e[f]:0; const newV=d.n?d.n[f]:0;
+      return `<span style="font-size:.8rem;">${fieldLabel[f]||f}：<span style="color:#c0392b;text-decoration:line-through;">${oldV}</span>→<span style="color:#27ae60;font-weight:700;">${newV}</span></span>`;
+    }).join(' &nbsp; ');
+    html+=`<tr><td><span style="padding:2px 8px;border-radius:6px;font-size:.78rem;font-weight:700;${typeStyle[d.type]}">${typeLabel[d.type]}</span></td><td style="font-size:.8rem;">${d.team}</td><td>#${d.no}</td><td>${d.name}</td><td>第${d.gm}場</td><td style="font-size:.83rem;">${diffCells||'—'}</td></tr>`;
+  });
+  if(diffs.length>100) html+=`<tr><td colspan="6" style="color:#999;font-style:italic;">...（僅顯示前100筆差異，共 ${diffs.length} 筆）</td></tr>`;
+  html+='</tbody></table></div></div>';
+  return html;
 }
 function showUploadMsg(type,msg){
   document.getElementById('preview-area').innerHTML=`<div class="${type==='error'?'upload-error':'preview-info'}">${msg}</div>`;
@@ -1986,14 +2134,19 @@ function _syncLegacyFromBD(skipBattingData){
   PLAYERS.length=0;
   const pMap={};
   pendingBD.forEach(d=>{
-    if(!pMap[d.no]) pMap[d.no]={no:d.no,name:d.name,games:{}};
+    // ★ 修正：key 加入 team 區分，避免不同球隊同背號球員混算；並保留 team 欄位
+    const pKey=`${d.team||''}|${d.no}`;
+    if(!pMap[pKey]) pMap[pKey]={no:d.no,name:d.name,team:d.team||undefined,games:{}};
     const gIdx=(gmIndex[d.gm]||d.gm)-1;
-    pMap[d.no].games[gIdx]=[d.ab,d.h,d.bb,d.k,d.rbi,d.r,d.b1,d.b2,d.b3,d.hr];
+    pMap[pKey].games[gIdx]=[d.ab,d.h,d.bb,d.k,d.rbi,d.r,d.b1,d.b2,d.b3,d.hr];
   });
   Object.values(pMap).sort((a,b)=>a.no-b.no).forEach(p=>{
     const gs=[];
     for(let i=0;i<gmNums.length;i++) gs.push(p.games[i]||[0,0,0,0,0,0,0,0,0,0]);
-    PLAYERS.push({no:p.no,name:p.name,games:gs});
+    // ★ 修正：保留 team 欄位，使 buildPlayerSelect / buildTableData 的球隊篩選正常運作
+    const entry={no:p.no,name:p.name,games:gs};
+    if(p.team) entry.team=p.team;
+    PLAYERS.push(entry);
   });
   // 同步 TEAM_GAMES
   TEAM_GAMES.length=0;
@@ -2363,35 +2516,155 @@ function refreshDefaultsData(){
   },600);
 }
 
+// ★ 「更新預設數據」按鈕：將目前 BATTING_DATA / DEFENSE_DATA 同步寫入 localStorage
+//    作為「資料上傳」頁籤中「還原預設打擊數據」與「還原預設守備數據」的基準線
+function syncDefaultsFromTab(){
+  const btn=document.getElementById('btn-defaults-sync');
+  if(btn) btn.classList.add('loading');
+  setTimeout(()=>{
+    try{
+      // ── 打擊資料 ──
+      localStorage.setItem('u10_default_batting_data', JSON.stringify(BATTING_DATA));
+      localStorage.setItem('u10_default_players', JSON.stringify(PLAYERS));
+      localStorage.setItem('u10_default_team_games', JSON.stringify(TEAM_GAMES));
+      // ── 守備資料 ──
+      localStorage.setItem('u10_def_default_defense', JSON.stringify(DEFENSE_DATA));
+      const _gl={}; Object.keys(GAME_LABELS).forEach(k=>{ _gl[k]=GAME_LABELS[k]; });
+      localStorage.setItem('u10_def_default_game_labels', JSON.stringify(_gl));
+      // 強制更新 synced 標記，確保下次開啟頁面也從 localStorage 讀回
+      localStorage.setItem('u10_defaults_synced_v2','1');
+      // ── 顯示 toast ──
+      let toast=document.getElementById('defaults-sync-toast');
+      if(!toast){
+        toast=document.createElement('div');
+        toast.id='defaults-sync-toast';
+        toast.className='defaults-sync-toast';
+        const titleBox=document.querySelector('#tab-defaults .defaults-title-box');
+        if(titleBox&&titleBox.nextSibling) titleBox.parentNode.insertBefore(toast, titleBox.nextSibling);
+        else document.getElementById('tab-defaults').appendChild(toast);
+      }
+      toast.innerHTML=`✅ 預設數據已更新！打擊 <strong>${BATTING_DATA.length}</strong> 筆・守備 <strong>${DEFENSE_DATA.length}</strong> 筆 已同步至「資料上傳」還原基準`;
+      toast.style.display='flex';
+      setTimeout(()=>{ toast.style.display='none'; },5000);
+    }catch(e){
+      alert('❌ 更新失敗：'+e.message);
+    }
+    if(btn) btn.classList.remove('loading');
+  },400);
+}
+
 function renderDefaultsTab(){
+
+  // ── 工具：依球隊建立「game 編號 → 相對場次標籤」對照表 ──
+  // 好棒河馬 game:1~6 → 第1~6場；泰山河馬 game:7~10 → 第1~4場
+  function buildRelGameLabel(dataArr){
+    // 各隊獨立排序，各自從第1場起算
+    const byTeam={};
+    dataArr.forEach(d=>{
+      const t=d.team||'好棒河馬';
+      if(!byTeam[t])byTeam[t]=new Set();
+      byTeam[t].add(d.game);
+    });
+    const labelMap={}; // key: game (number), value: '第N場'
+    Object.values(byTeam).forEach(gameSet=>{
+      const sorted=[...gameSet].sort((a,b)=>a-b);
+      sorted.forEach((g,idx)=>{labelMap[g]='第'+(idx+1)+'場';});
+    });
+    return labelMap;
+  }
+
+  // ── 工具：從 BATTING_DATA 計算各球員各場（相對）的 AB/H/BB/K ──
+  // 回傳 Map<teamKey, Map<relIdx(0-based), {ab,h,bb,k}>>，teamKey='team|||name'
+  function buildPlayerGameStatsFromBD(){
+    // 先建立打擊資料相對場次索引
+    const bdRelLabel=buildRelGameLabel(BATTING_DATA);
+    // 收集各球隊的相對場次順序（sorted game nums by team）
+    const byTeam={};
+    BATTING_DATA.forEach(d=>{
+      const t=d.team||'好棒河馬';
+      if(!byTeam[t])byTeam[t]=new Set();
+      byTeam[t].add(d.game);
+    });
+    const teamGameOrder={}; // team -> [game nums sorted]
+    Object.entries(byTeam).forEach(([t,s])=>{
+      teamGameOrder[t]=[...s].sort((a,b)=>a-b);
+    });
+    // 計算每位球員每場（相對index）的 AB/H/BB/K
+    const result=new Map(); // 'teamKey|||name' -> {team, name, gameStats:[{ab,h,bb,k},...] per relIdx}
+    PLAYERS.forEach(p=>{
+      const pTeam=p.team||'好棒河馬';
+      const mapKey=pTeam+'|||'+p.name;
+      const gameNums=teamGameOrder[pTeam]||[];
+      const gameStats=gameNums.map(g=>{
+        const rows=BATTING_DATA.filter(d=>d.game===g&&d.name===p.name&&(d.team||'好棒河馬')===pTeam);
+        let ab=0,h=0,bb=0,k=0;
+        rows.forEach(d=>{
+          const c=d.content||'';
+          if(IS_AB(c)) ab++;
+          if(IS_HIT(c)) h++;
+          if(c==='BB') bb++;
+          if(c==='K') k++;
+        });
+        return {ab,h,bb,k};
+      });
+      result.set(mapKey,{team:pTeam,name:p.name,gameStats});
+    });
+    return {result,teamGameOrder};
+  }
+
   // ── 球員名單 ──
   const ptbody=document.getElementById('defaults-players-tbody');
   const pcnt=document.getElementById('defaults-players-count');
   if(ptbody){
-    const numGames=TEAM_GAMES.length||6;
+    // 分別取各球隊的場次數，作為欄位數上限
+    const {result:bdPlayerStats, teamGameOrder}=buildPlayerGameStatsFromBD();
+    // 取所有球隊場次數最大值，決定 header 欄數（由外層 HTML 已寫死6欄，此處動態填格）
+    const maxGames=Math.max(...Object.values(teamGameOrder).map(a=>a.length), TEAM_GAMES.length, 1);
     ptbody.innerHTML=PLAYERS.map(p=>{
+      const pTeam=p.team||'好棒河馬';
+      const mapKey=pTeam+'|||'+p.name;
+      const bdStats=bdPlayerStats.get(mapKey);
+      const teamGameCount=(teamGameOrder[pTeam]||[]).length;
+      // 優先使用 BATTING_DATA 計算值；若該球員無 BD 資料才 fallback 到 p.games
       let cells='';
-      for(let i=0;i<numGames;i++){
-        const g=p.games[i]||[0,0,0,0,0,0,0,0,0,0];
-        const ab=g[0],h=g[1],bb=g[2],k=g[3];
-        const av=ab>0?(h/ab).toFixed(3):'---';
-        cells+=`<td>${ab}/${h}/${bb}/${k}<br><span style="font-size:.72rem;color:#888;">${av}</span></td>`;
+      for(let i=0;i<maxGames;i++){
+        if(i<teamGameCount && bdStats){
+          // 從 BATTING_DATA 計算
+          const gs=bdStats.gameStats[i]||{ab:0,h:0,bb:0,k:0};
+          const av=gs.ab>0?(gs.h/gs.ab).toFixed(3):'---';
+          cells+=`<td>${gs.ab}/${gs.h}/${gs.bb}/${gs.k}<br><span style="font-size:.72rem;color:#888;">${av}</span></td>`;
+        } else if(!p.team && p.games[i]){
+          // 好棒河馬備用：從靜態 games 陣列
+          const g=p.games[i]||[0,0,0,0,0,0,0,0,0,0];
+          const ab=g[0],h=g[1],bb=g[2],k=g[3];
+          const av=ab>0?(h/ab).toFixed(3):'---';
+          cells+=`<td>${ab}/${h}/${bb}/${k}<br><span style="font-size:.72rem;color:#888;">${av}</span></td>`;
+        } else {
+          cells+=`<td style="color:#ccc;">—</td>`;
+        }
       }
-      return `<tr><td style="font-weight:700;color:#005087;">#${p.no}</td><td style="font-weight:600;">${p.name}</td>${cells}</tr>`;
+      // 好棒河馬理同泰山河馬，全部顯示球隊名稱強調
+      const _pTeamName=p.team||'好棒河馬';
+      const _pTeamBg=_pTeamName==='好棒河馬'?'#e3f2fd':'#e8f5e9';
+      const _pTeamColor=_pTeamName==='好棒河馬'?'#1565c0':'#1a7f5a';
+      const teamBadge=`<span style="font-size:.7rem;background:${_pTeamBg};color:${_pTeamColor};border-radius:6px;padding:1px 5px;margin-left:4px;">${_pTeamName}</span>`;
+      return `<tr><td style="font-weight:700;color:#005087;">#${p.no}</td><td style="font-weight:600;">${p.name}${teamBadge}</td>${cells}</tr>`;
     }).join('');
     if(pcnt)pcnt.textContent=`${PLAYERS.length} 位球員`;
   }
 
   // ── 場次摘要 ──
+  // 好棒河馬：從靜態 TEAM_GAMES 讀取；泰山河馬：從 BATTING_DATA 動態計算
   const gtbody=document.getElementById('defaults-teamgames-tbody');
   const gcnt=document.getElementById('defaults-teamgames-count');
   if(gtbody){
-    gtbody.innerHTML=TEAM_GAMES.map(g=>{
+    // 好棒河馬場次（靜態）
+    const u10Rows=TEAM_GAMES.map((g,idx)=>{
       const avgStr=typeof g.avg==='number'?g.avg.toFixed(3):'---';
       const obpStr=typeof g.obp==='number'?g.obp.toFixed(3):'---';
       const slgStr=typeof g.slg==='number'?g.slg.toFixed(3):'---';
       return `<tr>
-        <td style="font-weight:700;color:#005087;">${g.label}</td>
+        <td style="font-weight:700;color:#005087;"><span style="font-size:.7rem;background:#e3f2fd;color:#1565c0;border-radius:5px;padding:1px 5px;margin-right:3px;">好棒河馬</span>${g.label}</td>
         <td>${g.ab}</td><td>${g.h}</td><td>${g.bb}</td><td>${g.k}</td>
         <td>${g.rbi}</td><td>${g.r}</td>
         <td>${g.b1}</td><td>${g.b2}</td><td>${g.b3}</td><td>${g.hr}</td>
@@ -2399,14 +2672,52 @@ function renderDefaultsTab(){
         <td style="color:#005087;font-weight:700;">${obpStr}</td>
         <td style="color:#27ae60;font-weight:700;">${slgStr}</td>
       </tr>`;
-    }).join('');
-    if(gcnt)gcnt.textContent=`${TEAM_GAMES.length} 場次`;
+    });
+    // 泰山河馬場次（從 BATTING_DATA 動態計算）
+    const u8Games=[...new Set(BATTING_DATA.filter(d=>d.team==='泰山河馬').map(d=>d.game))].sort((a,b)=>a-b);
+    const u8Rows=u8Games.map((gNum,idx)=>{
+      const rows=BATTING_DATA.filter(d=>d.game===gNum&&d.team==='泰山河馬');
+      let ab=0,h=0,bb=0,hp=0,k=0,rbi=0,r=0,b1=0,b2=0,b3=0,hr=0;
+      rows.forEach(d=>{
+        const c=d.content||'';
+        if(IS_AB(c))ab++;
+        if(IS_HIT(c))h++;
+        if(c==='BB')bb++;
+        if(c==='HP')hp++;
+        if(c==='K')k++;
+        rbi+=d.rbi||0; r+=d.r||0;
+        if(c==='1B'||c==='1B_內')b1++;
+        if(c==='2B')b2++;
+        if(c==='3B')b3++;
+        if(c==='HR'||c==='HR_內')hr++;
+      });
+      const avg_v=ab>0?h/ab:null;
+      const obp_v=(ab+bb+hp)>0?(h+bb+hp)/(ab+bb+hp):null;
+      const tb=b1+b2*2+b3*3+hr*4;
+      const slg_v=ab>0?tb/ab:null;
+      const avgStr=avg_v!==null?avg_v.toFixed(3):'---';
+      const obpStr=obp_v!==null?obp_v.toFixed(3):'---';
+      const slgStr=slg_v!==null?slg_v.toFixed(3):'---';
+      return `<tr>
+        <td style="font-weight:700;color:#1a7f5a;"><span style="font-size:.7rem;background:#e8f5e9;color:#1a7f5a;border-radius:5px;padding:1px 5px;margin-right:3px;">泰山河馬</span>#${idx+1}</td>
+        <td>${ab}</td><td>${h}</td><td>${bb}</td><td>${k}</td>
+        <td>${rbi}</td><td>${r}</td>
+        <td>${b1}</td><td>${b2}</td><td>${b3}</td><td>${hr}</td>
+        <td style="color:#e67e22;font-weight:700;">${avgStr}</td>
+        <td style="color:#005087;font-weight:700;">${obpStr}</td>
+        <td style="color:#27ae60;font-weight:700;">${slgStr}</td>
+      </tr>`;
+    });
+    gtbody.innerHTML=u10Rows.join('')+u8Rows.join('');
+    if(gcnt)gcnt.textContent=`${TEAM_GAMES.length+u8Games.length} 場次（好棒河馬 ${TEAM_GAMES.length} 場 + 泰山河馬 ${u8Games.length} 場）`;
   }
 
-  // ── 打擊記錄 ──
+  // ── 打擊記錄（各隊相對場次：泰山河馬 game 7~10 顯示為第 1~4 場）──
   const btbody=document.getElementById('defaults-batting-tbody');
   const bcnt=document.getElementById('defaults-batting-count');
   if(btbody){
+    // 建立各隊相對場次標籤
+    const bdRelLabel=buildRelGameLabel(BATTING_DATA);
     const contentColor=c=>{
       if(['1B','1B_內'].includes(c))return 'background:#e8f5e9;color:#2e7d32;';
       if(c==='2B')return 'background:#e3f2fd;color:#1565c0;';
@@ -2419,8 +2730,13 @@ function renderDefaultsTab(){
     btbody.innerHTML=BATTING_DATA.map(d=>{
       const style=contentColor(d.content||'');
       const badge=`<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:.78rem;font-weight:700;${style}">${d.content||'—'}</span>`;
+      const relLabel=bdRelLabel[d.game]||('第'+d.game+'場');
+      // 無論有無 team 欄位，一律顯示球隊名稱（好棒河馬早期資料 team 欄位可能為 undefined）
+      const _dTeamName=d.team||'好棒河馬';
+      const teamColor=_dTeamName==='泰山河馬'?'#1a7f5a':'#005087';
+      const teamBadge=`<span style="font-size:.68rem;background:${_dTeamName==='泰山河馬'?'#e8f5e9':'#e3f2fd'};color:${teamColor};border-radius:5px;padding:1px 4px;margin-right:3px;">${_dTeamName}</span>`;
       return `<tr>
-        <td style="font-weight:700;color:#005087;">第${d.game}場</td>
+        <td style="font-weight:700;color:${teamColor};">${teamBadge}${relLabel}</td>
         <td style="font-size:.8rem;color:#666;">${d.opponent||'—'}</td>
         <td>第${d.seq}棒</td>
         <td>第${d.inning}局</td>
@@ -2434,16 +2750,21 @@ function renderDefaultsTab(){
     if(bcnt)bcnt.textContent=`${BATTING_DATA.length} 筆打席`;
   }
 
-  // ── 守備記錄 ──
+  // ── 守備記錄（各隊相對場次：泰山河馬 game 7~10 顯示為第 1~4 場）──
   const dtbody=document.getElementById('defaults-defense-tbody');
   const dcnt=document.getElementById('defaults-defense-count');
   if(dtbody){
+    // 建立各隊相對場次標籤
+    const ddRelLabel=buildRelGameLabel(DEFENSE_DATA);
     dtbody.innerHTML=DEFENSE_DATA.map(d=>{
       const errBadge=d.isError
         ?`<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:.78rem;background:#fdecea;color:#c0392b;font-weight:700;">❗ 失誤</span>`
         :`<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:.78rem;background:#e8f5e9;color:#27ae60;font-weight:600;">✓ 正常</span>`;
+      const relLabel=ddRelLabel[d.game]||('第'+d.game+'場');
+      const teamColor=d.team==='泰山河馬'?'#1a7f5a':'#1a7f5a';
+      const teamBadge=d.team?`<span style="font-size:.68rem;background:${d.team==='泰山河馬'?'#e8f5e9':'#e3f2fd'};color:${d.team==='泰山河馬'?'#1a7f5a':'#005087'};border-radius:5px;padding:1px 4px;margin-right:3px;">${d.team}</span>`:'';
       return `<tr>
-        <td style="font-weight:700;color:#1a7f5a;">第${d.game}場</td>
+        <td style="font-weight:700;color:#1a7f5a;">${teamBadge}${relLabel}</td>
         <td style="font-size:.8rem;color:#666;">${d.opponent||'—'}</td>
         <td>第${d.seq}棒</td>
         <td>第${d.inning}局</td>
@@ -2508,6 +2829,26 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderBatting();
   renderDefRanking();
   renderDefAwards();
+  // ★ 自動同步預設資料頁籤：確保「球員名單」、「場次摘要」、「打擊記錄」、「守備記錄」
+  //    在頁面初次載入時即顯示最新的 PLAYERS / TEAM_GAMES / BATTING_DATA / DEFENSE_DATA
+  renderDefaultsTab();
+
+  // ★★ 「預設資料」頁簺 → 「資料上傳」預設基準線同步
+  //    首次選染完成後，將目前 HTML 內建的最新資料寫入 localStorage。
+  //    「還原預設打擊數據」 / 「還原預設守備數據」按鈕往後將永遠對準此資料還原。
+  //    標記鍵 'u10_defaults_synced_v2'：強制覆蓋舊版 v1 所存的舊資料。
+  try{
+    if(!localStorage.getItem('u10_defaults_synced_v2')){
+      localStorage.removeItem('u10_defaults_synced_v1');
+      localStorage.setItem('u10_default_batting_data', JSON.stringify(BATTING_DATA));
+      localStorage.setItem('u10_default_players', JSON.stringify(PLAYERS));
+      localStorage.setItem('u10_default_team_games', JSON.stringify(TEAM_GAMES));
+      localStorage.setItem('u10_def_default_defense', JSON.stringify(DEFENSE_DATA));
+      const _glSync={}; Object.keys(GAME_LABELS).forEach(k=>{ _glSync[k]=GAME_LABELS[k]; });
+      localStorage.setItem('u10_def_default_game_labels', JSON.stringify(_glSync));
+      localStorage.setItem('u10_defaults_synced_v2','1');
+    }
+  }catch(e){}
 });
 
 // ===== TAB 6: 守備記錄 =====
@@ -3036,13 +3377,15 @@ function parseDefRecordNew(rows, fname){
   // 預覽
   const gmSet=[...new Set(result.map(d=>d.game))].sort((a,b)=>a-b);
   let html=`<div class="preview-info">✅ 解析成功「${fname}」— 共 <strong>${result.length}</strong> 筆守備記錄，涵蓋 <strong>${gmSet.length}</strong> 場（新格式 → 守備記錄）</div>`;
-  html+='<div class="preview-wrap"><table class="preview-table"><thead><tr><th>場次</th><th>對手</th><th>打序</th><th>局次</th><th>背號</th><th>姓名</th><th>守備內容</th><th>守備位置</th><th>失誤</th></tr></thead><tbody>';
+  html+='<div class="preview-wrap"><table class="preview-table"><thead><tr><th>球隊</th><th>場次</th><th>對手</th><th>打序</th><th>局次</th><th>背號</th><th>姓名</th><th>守備內容</th><th>守備位置</th><th>失誤</th></tr></thead><tbody>';
   [...result].slice(0,50).forEach(d=>{
     const errStyle=d.isError?'color:#c0392b;font-weight:700;':'';
-    html+=`<tr><td>#${d.game}</td><td>${d.opponent}</td><td>第${d.seq}棒</td><td>第${d.inning}局</td><td>#${d.no}</td><td>${d.name}</td><td style="${errStyle}">${d.content}</td><td>${d.pos}</td><td>${d.isError?'❗ 是':'—'}</td></tr>`;
+    html+=`<tr><td>${d.team||'—'}</td><td>#${d.game}</td><td>${d.opponent}</td><td>第${d.seq}棒</td><td>第${d.inning}局</td><td>#${d.no}</td><td>${d.name}</td><td style="${errStyle}">${d.content}</td><td>${d.pos}</td><td>${d.isError?'❗ 是':'—'}</td></tr>`;
   });
-  if(result.length>50) html+=`<tr><td colspan="9" style="color:#999;font-style:italic;">...（僅顯示前50筆，共 ${result.length} 筆）</td></tr>`;
+  if(result.length>50) html+=`<tr><td colspan="10" style="color:#999;font-style:italic;">...（僅顯示前50筆，共 ${result.length} 筆）</td></tr>`;
   html+='</tbody></table></div>';
+  // ★ 差異比較（新格式守備記錄 vs DEFENSE_DATA）
+  html+=buildDefenseDiffHtml(result);
   document.getElementById('def-preview-area').innerHTML=html;
   document.getElementById('def-preview-sec').style.display='block';
   document.getElementById('def-apply-success').style.display='none';
@@ -3078,9 +3421,88 @@ function parseDefStatsOld(rows, fname){
     html+=`<tr><td>#${p.no}</td><td>${p.name}</td><td>${p.tc??'---'}</td><td>${p.po??'---'}</td><td>${p.a??'---'}</td><td>${p.e??'---'}</td><td>${fp}</td><td>${p.go??'---'}</td><td>${p.dp??'---'}</td><td>${p.fo??'---'}</td><td>${p.fo_in??'---'}</td><td>${p.fc??'---'}</td><td>${p.sf??'---'}</td><td>${p.sac??'---'}</td><td>${p.e_out??'---'}</td><td>${p.e_in??'---'}</td></tr>`;
   });
   html += '</tbody></table></div>';
+  // ★ 差異比較（舊格式守備統計與 DEFENSE_DATA）
+  html += buildDefenseStatsDiffHtml(result);
   document.getElementById('def-preview-area').innerHTML = html;
   document.getElementById('def-preview-sec').style.display = 'block';
   document.getElementById('def-apply-success').style.display = 'none';
+}
+
+// ===== 守備資料 diff 比較函數 =====
+// 新格式：比對這次上傳的守備記錄 vs 目前 DEFENSE_DATA
+function buildDefenseDiffHtml(newRecords){
+  const makeKey=d=>`${d.team||''}|${d.game}|${d.seq||0}|${d.inning||0}|${d.no||''}|${d.name||''}|${d.content||''}|${d.pos||''}`; // ★ 加入 team 避免多球隊同場次衝突
+  const oldMap=new Map(); DEFENSE_DATA.forEach(d=>{ const k=makeKey(d); oldMap.set(k,(oldMap.get(k)||0)+1); });
+  const newMap=new Map(); newRecords.forEach(d=>{ const k=makeKey(d); newMap.set(k,(newMap.get(k)||0)+1); });
+  const added=[],removed=[];
+  newRecords.forEach(d=>{ const k=makeKey(d); const oc=oldMap.get(k)||0,nc=newMap.get(k)||0; if(nc>oc) for(let i=0;i<nc-oc;i++) added.push(d); });
+  DEFENSE_DATA.forEach(d=>{ const k=makeKey(d); const oc=oldMap.get(k)||0,nc=newMap.get(k)||0; if(oc>nc) for(let i=0;i<oc-nc;i++) removed.push(d); });
+  if(!added.length&&!removed.length)
+    return `<div style="margin-top:16px;padding:12px 16px;background:#e8f5e9;border-left:4px solid #27ae60;border-radius:6px;font-size:.9rem;color:#1a5c2a;">✅ <strong>與預設資料完全相同</strong>，無差異紀錄。</div>`;
+  let html=`<div style="margin-top:18px;">`;
+  html+=`<div style="font-size:1rem;font-weight:700;color:#005087;margin-bottom:8px;">🛡️ 與預設守備資料差異清單 <span style="font-size:.82rem;font-weight:400;color:#666;">（新增 ${added.length} 筆 ／ 減少 ${removed.length} 筆）</span></div>`;
+  if(added.length){
+    html+=`<div style="margin-bottom:6px;font-weight:600;color:#1a7f5a;font-size:.88rem;">🟢 新增 ${added.length} 筆</div>`;
+    html+=`<div class="preview-wrap"><table class="preview-table"><thead><tr><th>球隊</th><th>場次</th><th>對手</th><th>打序</th><th>局次</th><th>背號</th><th>姓名</th><th>守備內容</th><th>守備位置</th><th>失誤</th></tr></thead><tbody>`;
+    added.slice(0,100).forEach(d=>{
+      const errStyle=d.isError?'color:#c0392b;font-weight:700;':'';
+      html+=`<tr style="background:#f0fff4;"><td>${d.team||'—'}</td><td>#${d.game}</td><td>${d.opponent||'—'}</td><td>${d.seq?'第'+d.seq+'棒':'—'}</td><td>${d.inning?'第'+d.inning+'局':'—'}</td><td>#${d.no||'—'}</td><td style="color:#1a7f5a;font-weight:600;">${d.name||'—'}</td><td style="${errStyle}">${d.content||'—'}</td><td>${d.pos||'—'}</td><td>${d.isError?'❗ 是':'—'}</td></tr>`;
+    });
+    if(added.length>100) html+=`<tr><td colspan="10" style="color:#999;font-style:italic;">…（僅顯示前100筆，共 ${added.length} 筆）</td></tr>`;
+    html+='</tbody></table></div>';
+  }
+  if(removed.length){
+    html+=`<div style="margin:10px 0 6px;font-weight:600;color:#c0392b;font-size:.88rem;">🔴 減少 ${removed.length} 筆（預設有但上傳檔無）</div>`;
+    html+=`<div class="preview-wrap"><table class="preview-table"><thead><tr><th>球隊</th><th>場次</th><th>對手</th><th>打序</th><th>局次</th><th>背號</th><th>姓名</th><th>守備內容</th><th>守備位置</th><th>失誤</th></tr></thead><tbody>`;
+    removed.slice(0,100).forEach(d=>{
+      const errStyle=d.isError?'color:#c0392b;font-weight:700;':'';
+      html+=`<tr style="background:#fff5f5;"><td>${d.team||'—'}</td><td>#${d.game}</td><td>${d.opponent||'—'}</td><td>${d.seq?'第'+d.seq+'棒':'—'}</td><td>${d.inning?'第'+d.inning+'局':'—'}</td><td>#${d.no||'—'}</td><td style="color:#c0392b;">${d.name||'—'}</td><td style="${errStyle}">${d.content||'—'}</td><td>${d.pos||'—'}</td><td>${d.isError?'❗ 是':'—'}</td></tr>`;
+    });
+    if(removed.length>100) html+=`<tr><td colspan="10" style="color:#999;font-style:italic;">…（僅顯示前100筆，共 ${removed.length} 筆）</td></tr>`;
+    html+='</tbody></table></div>';
+  }
+  html+='</div>';
+  return html;
+}
+// 舊格式守備統計 diff（對比 DEFENSE_DATA 中相同背號的失誤數和守備次數）
+function buildDefenseStatsDiffHtml(newStats){
+  const makeKey=d=>`${d.no}|${d.name}`;
+  const oldSummary={};
+  DEFENSE_DATA.forEach(d=>{
+    const k=`${d.no}|${d.name}`;
+    if(!oldSummary[k]) oldSummary[k]={no:d.no,name:d.name,total:0,errors:0};
+    oldSummary[k].total++;
+    if(d.isError) oldSummary[k].errors++;
+  });
+  const diffs=[];
+  newStats.forEach(p=>{
+    const k=`${p.no}|${p.name}`;
+    const old=oldSummary[k];
+    const changed=[];
+    if(old){
+      if(p.e!==(old.errors))changed.push({f:'失誤(E)',o:old.errors,n:p.e});
+      if(p.tc!==(old.total))changed.push({f:'TC',o:old.total,n:p.tc});
+    } else {
+      changed.push({f:'寽先',o:'無',n:`TC=${p.tc},E=${p.e}`});
+    }
+    if(changed.length) diffs.push({no:p.no,name:p.name,changed});
+  });
+  // 檢查舊資料中存在但上傳資料中不存在的球員
+  Object.values(oldSummary).forEach(old=>{
+    const found=newStats.find(p=>p.no===old.no&&p.name===old.name);
+    if(!found) diffs.push({no:old.no,name:old.name,changed:[{f:'在偆',o:`TC=${old.total},E=${old.errors}`,n:'上傳檔無此球員'}]});
+  });
+  if(!diffs.length)
+    return `<div style="margin-top:16px;padding:12px 16px;background:#e8f5e9;border-left:4px solid #27ae60;border-radius:6px;font-size:.9rem;color:#1a5c2a;">✅ <strong>與預設守備資料差異不大</strong>（舊格式對比失誤/TC）。</div>`;
+  let html=`<div style="margin-top:18px;">`;
+  html+=`<div style="font-size:1rem;font-weight:700;color:#005087;margin-bottom:8px;">🛡️ 與預設守備統計差異 <span style="font-size:.82rem;font-weight:400;color:#666;">（${diffs.length} 位球員有差異）</span></div>`;
+  html+=`<div class="preview-wrap"><table class="preview-table"><thead><tr><th>背號</th><th>姓名</th><th>差異說明</th></tr></thead><tbody>`;
+  diffs.forEach(d=>{
+    const diffCells=d.changed.map(c=>`${c.f}：<span style="color:#c0392b;text-decoration:line-through;">${c.o}</span>→<span style="color:#27ae60;font-weight:700;">${c.n}</span>`).join(' &nbsp; ');
+    html+=`<tr><td>#${d.no}</td><td>${d.name}</td><td style="font-size:.84rem;">${diffCells}</td></tr>`;
+  });
+  html+='</tbody></table></div></div>';
+  return html;
 }
 
 function showDefUploadMsg(type, msg){
