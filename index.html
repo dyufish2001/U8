@@ -6080,7 +6080,8 @@ function exportPageHTML(){
 
   // ★ 將版本鍵從 v3 升版為 v4，確保將此檔上傳後瀏覽器首次開啟時強制清山 localStorage 舊快取，
   // 並回到「全隊總覽」頁籤（因為 DATA_VERSION !== '1' 會再走初始化分支，最後呼叫 navBtns[0].click()）
-  html = html.replace("const DATA_VERSION = 'u10_data_v3'", "const DATA_VERSION = 'u10_data_v4'");
+  // 升版：exportPageHTML 輸出的 HTML 使用 v6，確保瀏覽器強制清快取並載入最新資料
+  html = html.replace("const DATA_VERSION = 'u10_data_v5'", "const DATA_VERSION = 'u10_data_v6'");
 
   // ★ 確保輸出的 HTML 中，打擊/守備預覽區塊（含「輸出網頁」按鈕）一定可見
   html = html.replace(
@@ -6115,8 +6116,9 @@ function updateDefaultData(){
     localStorage.setItem('u10_default_team_games',JSON.stringify(TEAM_GAMES));
     // ★ 同步儲存逐打席明細（BATTING_DATA），確保重開頁面後可還原
     localStorage.setItem('u10_default_batting_data',JSON.stringify(BATTING_DATA));
-    // ★ 更新 v3 版本鍵，確保此資料在下次重開頁面後仍被保留（不被強制覆寫）
-    localStorage.setItem('u10_data_v3','1');
+    // ★ 更新版本鍵，確保此資料在下次重開頁面後仍被保留（不被強制覆寫）
+    localStorage.setItem('u10_data_v5','1');
+    localStorage.setItem('u10_data_v3','1'); // 向下相容
     // 同步顯示「資料上傳」與「手動調整」兩個頁籤的成功提示訊息
     ['setdefault-success','adj-setdefault-success'].forEach(id=>{
       const el=document.getElementById(id);
@@ -6667,14 +6669,15 @@ function renderDefaultsTab(){
 
 // ★★★ DOMContentLoaded 改為 window load：確保 BATTING_DATA / DEFENSE_DATA（宣告於後方 script 區塊）已完全解析後才執行初始化 ★★★
 window.addEventListener('load',()=>{
-  // ★★★ 版本強制同步（v3）：每次上傳新 index.html 後，強制以 HTML 內建資料覆蓋 localStorage 舊快取
+  // ★★★ 版本強制同步（v5）：每次上傳新 index.html 後，強制以 HTML 內建資料覆蓋 localStorage 舊快取
   // ★ 這是解決「GitHub Pages 顯示舊資料」問題的核心修正 ★
   // 原理：升版鍵 DATA_VERSION，只要版本不符就清除所有舊快取並以當前 HTML 內建資料為準
-  const DATA_VERSION = 'u10_data_v3';
+  const DATA_VERSION = 'u10_data_v5';
   try{
     if(localStorage.getItem(DATA_VERSION) !== '1'){
       // 清除所有舊版快取（v1, v2）
       ['u10_defaults_synced_v1','u10_defaults_synced_v2',
+       'u10_data_v3','u10_data_v4',
        'u10_default_players','u10_default_team_games',
        'u10_default_batting_data','u10_def_default_defense',
        'u10_def_default_game_labels'].forEach(k=>localStorage.removeItem(k));
@@ -6686,6 +6689,7 @@ window.addEventListener('load',()=>{
       const _glSync={}; Object.keys(GAME_LABELS).forEach(k=>{ _glSync[k]=GAME_LABELS[k]; });
       localStorage.setItem('u10_def_default_game_labels', JSON.stringify(_glSync));
       localStorage.setItem(DATA_VERSION, '1');
+      localStorage.setItem('u10_data_v3', '1'); // 向下相容
       localStorage.setItem('u10_defaults_synced_v2', '1'); // 向下相容
     } else {
       // 版本已符合：從 localStorage 還原使用者上傳的資料（保留使用者上傳內容）
