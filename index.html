@@ -422,6 +422,10 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
 .tsb-current{color:rgba(255,255,255,.75);font-size:.82rem;white-space:nowrap;margin-left:auto;}
 .tsb-current strong{color:#fff;}
 .team-filter-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:700;background:#e8f0fa;color:#005087;margin-left:8px;}
+/* ===== 網頁管理按鈕 ===== */
+.nav-admin-btn{background:linear-gradient(135deg,#2c3e50,#1a252f) !important;color:#f0e68c !important;border:2px solid rgba(240,230,140,.5) !important;margin-left:12px;font-weight:800 !important;letter-spacing:.03em;transition:all .2s !important;}
+.nav-admin-btn:hover{background:linear-gradient(135deg,#3d5166,#2c3e50) !important;border-color:rgba(240,230,140,.9) !important;transform:translateY(-1px);}
+.nav-admin-btn.active{background:linear-gradient(135deg,#1a252f,#0d1a24) !important;box-shadow:0 0 0 3px rgba(240,230,140,.4) !important;}
 </style>
 </head>
 <body>
@@ -446,27 +450,28 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
   <button onclick="switchTab('upload',this)" class="">📁 資料上傳</button>
   <button onclick="switchTab('adjust',this)">⚙️ 手動調整</button>
   <button onclick="switchTab('defaults',this)" class="">📋 預設資料</button>
+  <button onclick="switchTab('admin',this)" id="nav-admin-btn" class="nav-admin-btn">🔐 網頁管理</button>
 </nav>
 
 <div class="container">
 
 <!-- TAB 1 -->
-<div id="tab-team" class="tab-content">
+<div id="tab-team" class="tab-content active">
   <!-- ===== 球隊選擇器 ===== -->
   <div class="team-selector-bar" id="team-selector-bar" style="display: flex;">
     <div class="tsb-left">
       <span class="tsb-icon">🏟️</span>
       <span class="tsb-label">球隊篩選</span>
-      <select id="team-select" onchange="selectTeam(this.value)"><option value="好棒河馬">🏁 好棒河馬</option><option value="泰山河馬">🏁 泰山河馬</option></select>
+      <select id="team-select" onchange="selectTeam(this.value)"><option value="好棒河馬" selected>🏁 好棒河馬</option><option value="泰山河馬">🏁 泰山河馬</option></select>
     </div>
-    <div class="tsb-chips" id="team-chips"><button class="team-chip">🏁 好棒河馬</button><button class="team-chip active">🏁 泰山河馬</button></div>
-    <div class="tsb-current" id="tsb-current">目前顯示：<strong>泰山河馬</strong> 的數據</div>
+    <div class="tsb-chips" id="team-chips"><button class="team-chip active">🏁 好棒河馬</button><button class="team-chip">🏁 泰山河馬</button></div>
+    <div class="tsb-current" id="tsb-current">目前顯示：<strong>好棒河馬</strong> 的數據</div>
   </div>
   <div class="cards-row" id="team-cards"><div class="card blue"><div class="label">全隊累積安打</div><div class="value">47</div><div class="sub">打數 141 次</div></div><div class="card green"><div class="label">全隊打擊率</div><div class="value">0.333</div><div class="sub">得分 58 分</div></div><div class="card orange"><div class="label">累積打點</div><div class="value">41</div><div class="sub">保送 0 次</div></div><div class="card red"><div class="label">累積全壘打</div><div class="value">1</div><div class="sub">三振 10 次</div></div></div>
   <div class="chart-grid">
-    <div class="chart-box full"><h3>📈 各場次打擊趨勢</h3><div class="chart-area tall" id="chart-team-avg" _echarts_instance_="ec_1793686301954" style="user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); position: relative;"><div style="position: relative; width: 100px; height: 340px; padding: 0px; margin: 0px; border-width: 0px;"><canvas data-zr-dom-id="zr_0" width="100" height="340" style="position: absolute; left: 0px; top: 0px; width: 100px; height: 340px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div><div class=""></div></div></div>
-    <div class="chart-box"><h3>🔢 各場次安打類型分布</h3><div class="chart-area" id="chart-team-hits" _echarts_instance_="ec_1793686301955" style="user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); position: relative;"><div style="position: relative; width: 100px; height: 280px; padding: 0px; margin: 0px; border-width: 0px;"><canvas data-zr-dom-id="zr_0" width="100" height="280" style="position: absolute; left: 0px; top: 0px; width: 100px; height: 280px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div><div class=""></div></div></div>
-    <div class="chart-box"><h3>🏃 各場次得分 / 打點</h3><div class="chart-area" id="chart-team-rbi" _echarts_instance_="ec_1793686301956" style="user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); position: relative;"><div style="position: relative; width: 100px; height: 280px; padding: 0px; margin: 0px; border-width: 0px;"><canvas data-zr-dom-id="zr_0" width="100" height="280" style="position: absolute; left: 0px; top: 0px; width: 100px; height: 280px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div><div class=""></div></div></div>
+    <div class="chart-box full"><h3>📈 各場次打擊趨勢</h3><div class="chart-area tall" id="chart-team-avg" style="user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); position: relative;"><div style="position: relative; width: 100px; height: 340px; padding: 0px; margin: 0px; border-width: 0px;"><canvas data-zr-dom-id="zr_0" width="100" height="340" style="position: absolute; left: 0px; top: 0px; width: 100px; height: 340px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div><div class=""></div></div></div>
+    <div class="chart-box"><h3>🔢 各場次安打類型分布</h3><div class="chart-area" id="chart-team-hits" style="user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); position: relative;"><div style="position: relative; width: 100px; height: 280px; padding: 0px; margin: 0px; border-width: 0px;"><canvas data-zr-dom-id="zr_0" width="100" height="280" style="position: absolute; left: 0px; top: 0px; width: 100px; height: 280px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div><div class=""></div></div></div>
+    <div class="chart-box"><h3>🏃 各場次得分 / 打點</h3><div class="chart-area" id="chart-team-rbi" style="user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); position: relative;"><div style="position: relative; width: 100px; height: 280px; padding: 0px; margin: 0px; border-width: 0px;"><canvas data-zr-dom-id="zr_0" width="100" height="280" style="position: absolute; left: 0px; top: 0px; width: 100px; height: 280px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div><div class=""></div></div></div>
   </div>
 </div>
 
@@ -4693,7 +4698,7 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
       <button class="btn-dl" onclick="downloadTemplate()">⬇️ 下載攻擊數據範本（.xlsx）</button>
     </div>
   </div>
-  <div class="upload-sec" id="preview-sec" style="display: block;">
+  <div class="upload-sec" id="preview-sec" style="display: none;">
     <h3>🔍 打擊數據預覽</h3>
     <div id="preview-area"><div class="preview-info">✅ 解析成功「打擊數據範本_all.xlsx」— 共 <strong>23</strong> 位球員，<strong>6</strong> 場賽事（新格式）</div><div class="preview-wrap"><table class="preview-table"><thead><tr><th>球隊</th><th>背號</th><th>姓名</th><th>場次</th><th>打數</th><th>安打</th><th>打率</th><th>打點</th><th>得分</th><th>1B</th><th>2B</th><th>3B</th><th>HR</th><th>BB</th><th>K</th><th>HP</th></tr></thead><tbody><tr><td>泰山河馬</td><td>#6</td><td>陳曄</td><td>#1</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>0</td><td>4</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#9</td><td>蕭沛庭</td><td>#1</td><td>2</td><td>2</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>1</td><td>3</td><td>1</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#9</td><td>張郁晨</td><td>#1</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#15</td><td>陳冠安</td><td>#1</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>1</td><td>2</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#15</td><td>陳冠安</td><td>#1</td><td>2</td><td>2</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>3</td><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#17</td><td>楊定侖</td><td>#1</td><td>4</td><td>3</td><td style="color:#e67e22;font-weight:bold">0.750</td><td>2</td><td>4</td><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#18</td><td>許少澄</td><td>#1</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>2</td><td>3</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#23</td><td>吳倚墨</td><td>#1</td><td>4</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>2</td><td>3</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#26</td><td>莊閔程</td><td>#1</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#26</td><td>葉羿頡</td><td>#1</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>2</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#34</td><td>劉禹樂</td><td>#1</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>2</td><td>2</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#39</td><td>黃宇謙</td><td>#1</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#64</td><td>黃晨睿</td><td>#1</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#65</td><td>陳豫澄</td><td>#1</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>2</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#72</td><td>張世昀</td><td>#1</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#77</td><td>林承熙</td><td>#1</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#82</td><td>鄞圻睿</td><td>#1</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>0</td><td>2</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#91</td><td>林倬安</td><td>#1</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>0</td><td>3</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#98</td><td>朱彥宇</td><td>#1</td><td>3</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.667</td><td>1</td><td>2</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#98</td><td>朱彥宇</td><td>#1</td><td>4</td><td>4</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>2</td><td>1</td><td>2</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#99</td><td>張郁晨</td><td>#1</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#6</td><td>陳曄</td><td>#2</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>0</td><td>2</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#8</td><td>何天浩</td><td>#2</td><td>3</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.667</td><td>0</td><td>2</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#9</td><td>蕭沛庭</td><td>#2</td><td>2</td><td>2</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>1</td><td>3</td><td>1</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#9</td><td>張郁晨</td><td>#2</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#15</td><td>陳冠安</td><td>#2</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#15</td><td>陳冠安</td><td>#2</td><td>2</td><td>2</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>1</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#17</td><td>楊定侖</td><td>#2</td><td>3</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#18</td><td>許少澄</td><td>#2</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>1</td><td>4</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#23</td><td>吳倚墨</td><td>#2</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>2</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#26</td><td>莊閔程</td><td>#2</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#26</td><td>葉羿頡</td><td>#2</td><td>4</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>1</td><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#34</td><td>劉禹樂</td><td>#2</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#35</td><td>林賴奇</td><td>#2</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#65</td><td>陳豫澄</td><td>#2</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>4</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#72</td><td>張世昀</td><td>#2</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td><td>0</td></tr><tr><td>好棒河馬</td><td>#77</td><td>林承熙</td><td>#2</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#82</td><td>鄞圻睿</td><td>#2</td><td>3</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.667</td><td>2</td><td>0</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#91</td><td>林倬安</td><td>#2</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td><td>0</td></tr><tr><td>好棒河馬</td><td>#98</td><td>朱彥宇</td><td>#2</td><td>3</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.667</td><td>2</td><td>3</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#98</td><td>朱彥宇</td><td>#2</td><td>3</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.333</td><td>2</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#99</td><td>張郁晨</td><td>#2</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#6</td><td>陳曄</td><td>#3</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#9</td><td>蕭沛庭</td><td>#3</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>0</td><td>2</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#9</td><td>張郁晨</td><td>#3</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#15</td><td>陳冠安</td><td>#3</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#17</td><td>楊定侖</td><td>#3</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#18</td><td>許少澄</td><td>#3</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#23</td><td>吳倚墨</td><td>#3</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#26</td><td>葉羿頡</td><td>#3</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#35</td><td>林賴奇</td><td>#3</td><td>0</td><td>0</td><td style="color:#e67e22;font-weight:bold">---</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr><tr><td>好棒河馬</td><td>#42</td><td>林守柏</td><td>#3</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#50</td><td>陳昱瑄</td><td>#3</td><td>3</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.667</td><td>3</td><td>2</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#64</td><td>黃晨睿</td><td>#3</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>2</td><td>2</td><td>0</td><td>0</td><td>0</td><td>1</td><td>2</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#65</td><td>陳豫澄</td><td>#3</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#72</td><td>張世昀</td><td>#3</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#81</td><td>陳柏呈</td><td>#3</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#83</td><td>陳俊希</td><td>#3</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#91</td><td>林倬安</td><td>#3</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#98</td><td>朱彥宇</td><td>#3</td><td>3</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.333</td><td>3</td><td>3</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#98</td><td>朱彥宇</td><td>#3</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#99</td><td>張郁晨</td><td>#3</td><td>0</td><td>0</td><td style="color:#e67e22;font-weight:bold">---</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#99</td><td>盧洆言</td><td>#3</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#6</td><td>陳曄</td><td>#4</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td><td>0</td></tr><tr><td>好棒河馬</td><td>#9</td><td>蕭沛庭</td><td>#4</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#9</td><td>張郁晨</td><td>#4</td><td>4</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>1</td><td>4</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#15</td><td>陳冠安</td><td>#4</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#17</td><td>楊定侖</td><td>#4</td><td>4</td><td>3</td><td style="color:#e67e22;font-weight:bold">0.750</td><td>2</td><td>1</td><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#18</td><td>許少澄</td><td>#4</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#23</td><td>吳倚墨</td><td>#4</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>3</td><td>3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#26</td><td>莊閔程</td><td>#4</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#26</td><td>葉羿頡</td><td>#4</td><td>4</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.250</td><td>2</td><td>2</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#42</td><td>林守柏</td><td>#4</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#50</td><td>陳昱瑄</td><td>#4</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#64</td><td>黃晨睿</td><td>#4</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#65</td><td>陳豫澄</td><td>#4</td><td>4</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#72</td><td>張世昀</td><td>#4</td><td>0</td><td>0</td><td style="color:#e67e22;font-weight:bold">---</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#77</td><td>林承熙</td><td>#4</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#81</td><td>陳柏呈</td><td>#4</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#83</td><td>陳俊希</td><td>#4</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#91</td><td>林倬安</td><td>#4</td><td>3</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.333</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#98</td><td>朱彥宇</td><td>#4</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>泰山河馬</td><td>#98</td><td>朱彥宇</td><td>#4</td><td>4</td><td>2</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>3</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#99</td><td>張郁晨</td><td>#4</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>泰山河馬</td><td>#99</td><td>盧洆言</td><td>#4</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#8</td><td>何天浩</td><td>#5</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#9</td><td>蕭沛庭</td><td>#5</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>2</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#15</td><td>陳冠安</td><td>#5</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#26</td><td>莊閔程</td><td>#5</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#34</td><td>劉禹樂</td><td>#5</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#50</td><td>陳昱瑄</td><td>#5</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#64</td><td>黃晨睿</td><td>#5</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>0</td><td>2</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#72</td><td>張世昀</td><td>#5</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#77</td><td>林承熙</td><td>#5</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#81</td><td>陳柏呈</td><td>#5</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#82</td><td>鄞圻睿</td><td>#5</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td><td>0</td></tr><tr><td>好棒河馬</td><td>#98</td><td>朱彥宇</td><td>#5</td><td>2</td><td>2</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>1</td><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#99</td><td>張郁晨</td><td>#5</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#9</td><td>蕭沛庭</td><td>#6</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>0</td><td>2</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr><tr><td>好棒河馬</td><td>#15</td><td>陳冠安</td><td>#6</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#26</td><td>莊閔程</td><td>#6</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#34</td><td>劉禹樂</td><td>#6</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#35</td><td>林賴奇</td><td>#6</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td><td>0</td></tr><tr><td>好棒河馬</td><td>#50</td><td>陳昱瑄</td><td>#6</td><td>2</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.500</td><td>2</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#64</td><td>黃晨睿</td><td>#6</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#72</td><td>張世昀</td><td>#6</td><td>1</td><td>1</td><td style="color:#e67e22;font-weight:bold">1.000</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#77</td><td>林承熙</td><td>#6</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#81</td><td>陳柏呈</td><td>#6</td><td>3</td><td>1</td><td style="color:#e67e22;font-weight:bold">0.333</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr><tr><td>好棒河馬</td><td>#82</td><td>鄞圻睿</td><td>#6</td><td>2</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#98</td><td>朱彥宇</td><td>#6</td><td>3</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><td>好棒河馬</td><td>#99</td><td>張郁晨</td><td>#6</td><td>1</td><td>0</td><td style="color:#e67e22;font-weight:bold">0.000</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody></table></div><div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:#e8f5e9;color:#2e7d32;font-size:.88rem;">✅ 與預設資料完全一致，無差異。</div></div>
     <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -4721,7 +4726,7 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
     </div>
     <input type="file" id="def-file-input" accept=".xlsx,.xls,.csv" onchange="handleDefFileUpload(event)" style="display:none;">
     <div id="def-file-chosen" class="file-chosen" style="display: block;">📄 已選擇：守備記錄範本_all.xlsx</div>
-    <div id="def-preview-sec" style="display: block; margin-top: 14px;">
+    <div id="def-preview-sec" style="display: none; margin-top: 14px;">
       <h3>🔍 守備數據預覽</h3>
       <div id="def-preview-area"><div class="preview-info">✅ 解析成功「守備記錄範本_all.xlsx」— 共 <strong>84</strong> 筆守備記錄，涵蓋 <strong>6</strong> 場（新格式 → 守備記錄）</div><div class="preview-wrap"><table class="preview-table"><thead><tr><th>球隊</th><th>場次</th><th>對手</th><th>打序</th><th>局次</th><th>背號</th><th>姓名</th><th>守備內容</th><th>守備位置</th><th>失誤</th></tr></thead><tbody><tr><td>好棒河馬</td><td>#1</td><td>YM忍者</td><td>第4棒</td><td>第1局</td><td>#64</td><td>黃晨睿</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>好棒河馬</td><td>#1</td><td>YM忍者</td><td>第9棒</td><td>第3局</td><td>#9</td><td>蕭沛庭</td><td style="">GO</td><td>P</td><td>—</td></tr><tr><td>好棒河馬</td><td>#2</td><td>上智隼鷹</td><td>第1棒</td><td>第1局</td><td>#72</td><td>張世昀</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>1B</td><td>❗ 是</td></tr><tr><td>好棒河馬</td><td>#2</td><td>上智隼鷹</td><td>第4棒</td><td>第1局</td><td>#15</td><td>陳冠安</td><td style="">GO</td><td>P</td><td>—</td></tr><tr><td>好棒河馬</td><td>#2</td><td>上智隼鷹</td><td>第6棒</td><td>第4局</td><td>#26</td><td>莊閔程</td><td style="">GO</td><td>2B</td><td>—</td></tr><tr><td>好棒河馬</td><td>#2</td><td>上智隼鷹</td><td>第7棒</td><td>第2局</td><td>#15</td><td>陳冠安</td><td style="">GO</td><td>P</td><td>—</td></tr><tr><td>好棒河馬</td><td>#3</td><td>竹北雷爵B</td><td>第1棒</td><td>第1局</td><td>#72</td><td>張世昀</td><td style="">FO_內</td><td>1B</td><td>—</td></tr><tr><td>好棒河馬</td><td>#4</td><td>信義飛燕</td><td>第1棒</td><td>第1局</td><td>#50</td><td>陳昱瑄</td><td style="">GO</td><td>2B</td><td>—</td></tr><tr><td>好棒河馬</td><td>#4</td><td>信義飛燕</td><td>第1棒</td><td>第2局</td><td>#9</td><td>蕭沛庭</td><td style="">GO</td><td>SS</td><td>—</td></tr><tr><td>好棒河馬</td><td>#4</td><td>信義飛燕</td><td>第3棒</td><td>第1局</td><td>#50</td><td>陳昱瑄</td><td style="">GO</td><td>2B</td><td>—</td></tr><tr><td>好棒河馬</td><td>#4</td><td>信義飛燕</td><td>第3棒</td><td>第2局</td><td>#72</td><td>張世昀</td><td style="">GO</td><td>1B</td><td>—</td></tr><tr><td>好棒河馬</td><td>#4</td><td>信義飛燕</td><td>第9棒</td><td>第2局</td><td>#72</td><td>張世昀</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>1B</td><td>❗ 是</td></tr><tr><td>好棒河馬</td><td>#5</td><td>竹北雷爵A</td><td>第2棒</td><td>第2局</td><td>#72</td><td>張世昀</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>1B</td><td>❗ 是</td></tr><tr><td>好棒河馬</td><td>#5</td><td>竹北雷爵A</td><td>第3棒</td><td>第4局</td><td>#77</td><td>林承熙</td><td style="">FO</td><td>RF</td><td>—</td></tr><tr><td>好棒河馬</td><td>#5</td><td>竹北雷爵A</td><td>第5棒</td><td>第3局</td><td>#72</td><td>張世昀</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>1B</td><td>❗ 是</td></tr><tr><td>好棒河馬</td><td>#5</td><td>竹北雷爵A</td><td>第5棒</td><td>第4局</td><td>#82</td><td>鄞圻睿</td><td style="">FC</td><td>P</td><td>—</td></tr><tr><td>好棒河馬</td><td>#5</td><td>竹北雷爵A</td><td>第6棒</td><td>第1局</td><td>#64</td><td>黃晨睿</td><td style="">FC</td><td>3B</td><td>—</td></tr><tr><td>好棒河馬</td><td>#6</td><td>活力社區</td><td>第1棒</td><td>第3局</td><td>#9</td><td>蕭沛庭</td><td style="">FC</td><td>P</td><td>—</td></tr><tr><td>好棒河馬</td><td>#6</td><td>活力社區</td><td>第3棒</td><td>第1局</td><td>#50</td><td>陳昱瑄</td><td style="">FO_內</td><td>1B</td><td>—</td></tr><tr><td>好棒河馬</td><td>#6</td><td>活力社區</td><td>第3棒</td><td>第3局</td><td>#9</td><td>蕭沛庭</td><td style="">GO</td><td>P</td><td>—</td></tr><tr><td>好棒河馬</td><td>#6</td><td>活力社區</td><td>第6棒</td><td>第2局</td><td>#9</td><td>蕭沛庭</td><td style="">GO</td><td>P</td><td>—</td></tr><tr><td>好棒河馬</td><td>#6</td><td>活力社區</td><td>第7棒</td><td>第2局</td><td>#9</td><td>蕭沛庭</td><td style="">GO</td><td>P</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第1棒</td><td>第2局</td><td>#23</td><td>吳倚墨</td><td style="">FO</td><td>CF</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第1棒</td><td>第3局</td><td>#98</td><td>朱彥宇</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>SS</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第1棒</td><td>第4局</td><td>#9</td><td>張郁晨</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>3B</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第2棒</td><td>第4局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第3棒</td><td>第1局</td><td>#98</td><td>朱彥宇</td><td style="">FO_內</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第3棒</td><td>第2局</td><td>#98</td><td>朱彥宇</td><td style="">FO_內</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第3棒</td><td>第3局</td><td>#17</td><td>楊定侖</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>1B</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第3棒</td><td>第4局</td><td>#98</td><td>朱彥宇</td><td style="">FO_內</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第4棒</td><td>第3局</td><td>#17</td><td>楊定侖</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>1B</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第5棒</td><td>第3局</td><td>#18</td><td>許少澄</td><td style="">FC</td><td>2B</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第7棒</td><td>第2局</td><td>#17</td><td>楊定侖</td><td style="">GO</td><td>1B</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第9棒</td><td>第2局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#1</td><td>竹北雷爵</td><td>第9棒</td><td>第3局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第2棒</td><td>第3局</td><td>#6</td><td>陳曄</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>P</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第3棒</td><td>第1局</td><td>#9</td><td>張郁晨</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>3B</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第3棒</td><td>第3局</td><td>#98</td><td>朱彥宇</td><td style="">GO</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第3棒</td><td>第4局</td><td>#98</td><td>朱彥宇</td><td style="">FO_內</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第4棒</td><td>第1局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第4棒</td><td>第4局</td><td>#15</td><td>陳冠安</td><td style="">FC</td><td>3B</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第5棒</td><td>第1局</td><td>#98</td><td>朱彥宇</td><td style="">FO_內</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第5棒</td><td>第2局</td><td>#9</td><td>張郁晨</td><td style="">FO_內</td><td>3B</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第5棒</td><td>第3局</td><td>#98</td><td>朱彥宇</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>SS</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第6棒</td><td>第1局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第6棒</td><td>第3局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第6棒</td><td>第4局</td><td>#17</td><td>楊定侖</td><td style="color:#c0392b;font-weight:700;">E_內</td><td>1B</td><td>❗ 是</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第7棒</td><td>第1局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第8棒</td><td>第3局</td><td>#98</td><td>朱彥宇</td><td style="">FC</td><td>SS</td><td>—</td></tr><tr><td>泰山河馬</td><td>#2</td><td>信義飛燕</td><td>第8棒</td><td>第4局</td><td>#17</td><td>楊定侖</td><td style="">GO</td><td>1B</td><td>—</td></tr><tr><td colspan="10" style="color:#999;font-style:italic;">...（僅顯示前50筆，共 84 筆）</td></tr></tbody></table></div><div style="margin-top:16px;padding:12px 16px;background:#e8f5e9;border-left:4px solid #27ae60;border-radius:6px;font-size:.9rem;color:#1a5c2a;">✅ <strong>與預設資料完全相同</strong>，無差異紀錄。</div></div>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
@@ -4732,6 +4737,37 @@ tr.total-row td{background:#e8f0fa;font-weight:700;color:#005087;}
       </div>
       <div class="success-msg" id="def-apply-success" style="display: none;">🎉 守備數據已成功套用！請切換至「守備統計」頁籤檢視。</div>
       <div class="success-msg" id="export-def-success" style="background: rgb(232, 245, 233); border-color: rgb(129, 199, 132); color: rgb(46, 125, 50); display: none;">✅ 網頁已輸出！請至下載資料夾取得 index.html，上傳至 GitHub Pages 即可更新資料。</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 7: 網頁管理 -->
+<div id="tab-admin" class="tab-content">
+  <div style="max-width:420px;margin:60px auto 0;">
+    <div style="background:linear-gradient(135deg,#1a252f 0%,#2c3e50 100%);border-radius:16px;padding:32px 36px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="font-size:2.8rem;margin-bottom:8px;">🔐</div>
+        <h2 style="color:#fff;font-size:1.3rem;font-weight:800;margin:0 0 6px;">網頁管理者登入</h2>
+        <p style="color:rgba(255,255,255,.65);font-size:.85rem;margin:0;">登入後可使用「資料上傳」、「手動調整」、「預設資料」等管理功能</p>
+      </div>
+      <div id="admin-login-box">
+        <div style="margin-bottom:16px;">
+          <label style="color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;display:block;margin-bottom:6px;">帳號</label>
+          <input id="admin-username" type="text" placeholder="請輸入管理者帳號" style="width:100%;box-sizing:border-box;padding:11px 14px;border-radius:9px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:.93rem;outline:none;transition:border .2s;" onfocus="this.style.borderColor='rgba(255,255,255,.7)'" onblur="this.style.borderColor='rgba(255,255,255,.25)'" onkeydown="if(event.key==='Enter')document.getElementById('admin-password').focus()">
+        </div>
+        <div style="margin-bottom:22px;">
+          <label style="color:rgba(255,255,255,.8);font-size:.82rem;font-weight:700;display:block;margin-bottom:6px;">密碼</label>
+          <input id="admin-password" type="password" placeholder="請輸入管理者密碼" style="width:100%;box-sizing:border-box;padding:11px 14px;border-radius:9px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:.93rem;outline:none;transition:border .2s;" onfocus="this.style.borderColor='rgba(255,255,255,.7)'" onblur="this.style.borderColor='rgba(255,255,255,.25)'" onkeydown="if(event.key==='Enter')adminLogin()">
+        </div>
+        <div id="admin-login-err" style="display:none;background:rgba(231,76,60,.2);border:1.5px solid rgba(231,76,60,.5);border-radius:8px;padding:10px 14px;color:#ff8a80;font-size:.84rem;margin-bottom:16px;">❌ 帳號或密碼錯誤，請重新輸入。</div>
+        <button onclick="adminLogin()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#005087,#0077c2);color:#fff;font-size:1rem;font-weight:800;cursor:pointer;letter-spacing:.05em;transition:all .2s;box-shadow:0 4px 14px rgba(0,80,135,.4);" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">登入</button>
+      </div>
+      <div id="admin-logged-box" style="display:none;text-align:center;">
+        <div style="font-size:2.2rem;margin-bottom:12px;">✅</div>
+        <p style="color:#a8ffb0;font-size:1.05rem;font-weight:800;margin:0 0 6px;">登入成功！</p>
+        <p style="color:rgba(255,255,255,.7);font-size:.85rem;margin:0 0 24px;">您已以管理者身份登入，可使用所有管理功能。</p>
+        <button onclick="adminLogout()" style="padding:10px 28px;border-radius:9px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(231,76,60,.3)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">🚪 登出</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4901,7 +4937,14 @@ const charts={};
 function getChart(id){
   const el=document.getElementById(id);
   if(!el)return null;
-  if(!charts[id])charts[id]=echarts.init(el);
+  if(!charts[id]){
+    // ★ 清除 HTML 快照中殘留的舊 ECharts 實例（_echarts_instance_ 屬性），避免 init 失敗
+    try{
+      const stale=echarts.getInstanceByDom(el);
+      if(stale){ stale.dispose(); }
+    }catch(e){}
+    charts[id]=echarts.init(el);
+  }
   return charts[id];
 }
 window.addEventListener('resize',()=>Object.values(charts).forEach(c=>c&&c.resize()));
@@ -6039,6 +6082,16 @@ function exportPageHTML(){
   // 並回到「全隊總覽」頁籤（因為 DATA_VERSION !== '1' 會再走初始化分支，最後呼叫 navBtns[0].click()）
   html = html.replace("const DATA_VERSION = 'u10_data_v3'", "const DATA_VERSION = 'u10_data_v4'");
 
+  // ★ 確保輸出的 HTML 中，打擊/守備預覽區塊（含「輸出網頁」按鈕）一定可見
+  html = html.replace(
+    /(<div[^>]*id=["']preview-sec["'][^>]*style=["'][^"']*)display\s*:\s*none/g,
+    '$1display: block'
+  );
+  html = html.replace(
+    /(<div[^>]*id=["']def-preview-sec["'][^>]*style=["'][^"']*)display\s*:\s*none/g,
+    '$1display: block'
+  );
+
   // 觸發瀏覽器下載
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const url  = URL.createObjectURL(blob);
@@ -6170,7 +6223,7 @@ function renderAwards(){
 }
 
 // ===== 多球隊篩選核心 =====
-let currentTeam = null; // null = 全部球隊
+let currentTeam = '好棒河馬'; // 預設顯示好棒河馬（null = 全部球隊）
 
 function getTeamList(){
   const teams = new Set();
@@ -6286,7 +6339,6 @@ function switchTab(name,btn){
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
-  setTimeout(()=>Object.values(charts).forEach(c=>c&&c.resize()),50);
   if(name==='ranking'){
     tableData=buildTableData();
     tableData.sort((a,b)=>a.no-b.no);
@@ -6301,6 +6353,18 @@ function switchTab(name,btn){
   if(name==='defawards')renderDefAwards();
   if(name==='adjust'){renderAdjustTab();}
   if(name==='defaults'){renderDefaultsTab();}
+  // ★ 全隊總覽：在 tab 切換後讓瀏覽器完成 layout（80ms），dispose 舊實例，再以正確容器寬度重新渲染
+  if(name==='team'){
+    setTimeout(()=>{
+      ['chart-team-avg','chart-team-hits','chart-team-rbi'].forEach(id=>{
+        if(charts[id]){charts[id].dispose();delete charts[id];}
+      });
+      renderTeam();
+    }, 80);
+  } else {
+    // 非全隊總覽的其他頁籤：只做 ECharts resize
+    setTimeout(()=>Object.values(charts).forEach(c=>c&&c.resize()), 50);
+  }
 }
 
 // ===== TAB: 預設資料 =====
@@ -6601,7 +6665,8 @@ function renderDefaultsTab(){
   }
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
+// ★★★ DOMContentLoaded 改為 window load：確保 BATTING_DATA / DEFENSE_DATA（宣告於後方 script 區塊）已完全解析後才執行初始化 ★★★
+window.addEventListener('load',()=>{
   // ★★★ 版本強制同步（v3）：每次上傳新 index.html 後，強制以 HTML 內建資料覆蓋 localStorage 舊快取
   // ★ 這是解決「GitHub Pages 顯示舊資料」問題的核心修正 ★
   // 原理：升版鍵 DATA_VERSION，只要版本不符就清除所有舊快取並以當前 HTML 內建資料為準
@@ -6658,7 +6723,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   }catch(e){}
   // 初始化球隊選擇器
   refreshTeamSelector();
-  renderTeam();
   buildPlayerSelect();
   tableData=buildTableData();
   tableData.sort((a,b)=>a.no-b.no);
@@ -6677,11 +6741,35 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // ★★ 已由頂部 DATA_VERSION 版本強制同步邏輯統一處理，此處無需重複寫入
 
-  // ★ 固定開啟頁面時永遠先呈現「全隊總覽」頁籤（index 0）
-  const navBtns = document.querySelectorAll('nav button');
-  if(navBtns && navBtns.length > 0){
-    navBtns[0].click();
-  }
+  // ★ 固定開啟頁面時永遠先呈現「全隊總覽」頁籤，並確保 ECharts 在容器可見後才渲染
+  (function initTeamTab(){
+    // 1. 把所有 tab 先收起，再讓 tab-team 顯示
+    document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    const teamTab = document.getElementById('tab-team');
+    if(teamTab) teamTab.classList.add('active');
+    const firstNavBtn = document.querySelector('nav button');
+    if(firstNavBtn) firstNavBtn.classList.add('active');
+    // 2. 強制將球隊篩選預設為「好棒河馬」
+    currentTeam = '好棒河馬';
+    // 3. 延遲讓瀏覽器完成 layout（tab-team 已設為 active，確保容器有正確寬高）
+    setTimeout(function(){
+      // ★★ 徹底清除所有 chart-team 的殘留狀態：
+      //    (a) 先透過 DOM 清除 HTML 快照中的 _echarts_instance_ 殘留實例
+      //    (b) 清除容器內的靜態 canvas/div（讓 ECharts 從空白容器重新初始化）
+      //    (c) 清除 JS charts 物件快取
+      ['chart-team-avg','chart-team-hits','chart-team-rbi'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){
+          try{ const stale=echarts.getInstanceByDom(el); if(stale) stale.dispose(); }catch(e){}
+          el.innerHTML='';
+        }
+        if(charts[id]){ charts[id].dispose(); delete charts[id]; }
+      });
+      // ★ 透過 selectTeam 完整初始化：同步更新 select/chip/提示文字，並觸發全頁籤重新渲染
+      selectTeam('好棒河馬');
+    }, 150);
+  })();
 });
 
 // ===== TAB 6: 守備記錄 =====
@@ -7426,9 +7514,9 @@ function clearDefData(){
   document.querySelectorAll('nav button')[6].click();
 }
 
-// 設定守備上傳拖放
-document.addEventListener('DOMContentLoaded',()=>{
-  // ★ localStorage 已在第一個 DOMContentLoaded 清除，此處直接使用 HTML 內建守備資料
+// 設定守備上傳拖放（同樣改為 window load，確保 DEFENSE_DATA 已宣告）
+window.addEventListener('load',()=>{
+  // ★ localStorage 已在第一個 load 事件清除，此處直接使用 HTML 內建守備資料
   // 從 DEFENSE_DATA 重建 GAME_LABELS
   try{
     Object.keys(GAME_LABELS).forEach(k=>delete GAME_LABELS[k]);
@@ -8931,6 +9019,114 @@ function renderAdjImpactTable() {
     </tr>`;
   }).join('');
 }
+
+// ===== 網頁管理者系統 =====
+var ADMIN_USER = 'dyufish2001';
+var ADMIN_PASS = '1488abcD';
+var isAdminLoggedIn = false;
+
+// 受保護的頁籤 ID（tab- 後綴）
+var PROTECTED_TABS = ['upload','adjust','defaults'];
+
+// 登入函數
+function adminLogin(){
+  var u = document.getElementById('admin-username').value.trim();
+  var p = document.getElementById('admin-password').value;
+  if(u === ADMIN_USER && p === ADMIN_PASS){
+    isAdminLoggedIn = true;
+    document.getElementById('admin-login-box').style.display = 'none';
+    document.getElementById('admin-logged-box').style.display = 'block';
+    document.getElementById('admin-login-err').style.display = 'none';
+    // 更新導覽列按鈕樣式
+    var adminBtn = document.getElementById('nav-admin-btn');
+    if(adminBtn) adminBtn.style.background = 'rgba(39,174,96,.85)';
+    // 恢復受保護頁籤（移除蓋板）
+    PROTECTED_TABS.forEach(function(tabId){
+      var mask = document.getElementById('protected-mask-'+tabId);
+      if(mask) mask.style.display = 'none';
+    });
+  } else {
+    document.getElementById('admin-login-err').style.display = 'block';
+    document.getElementById('admin-password').value = '';
+  }
+}
+
+// 登出函數
+function adminLogout(){
+  isAdminLoggedIn = false;
+  document.getElementById('admin-login-box').style.display = 'block';
+  document.getElementById('admin-logged-box').style.display = 'none';
+  document.getElementById('admin-username').value = '';
+  document.getElementById('admin-password').value = '';
+  var adminBtn = document.getElementById('nav-admin-btn');
+  if(adminBtn) adminBtn.style.background = '';
+  // 重新覆蓋受保護頁籤
+  PROTECTED_TABS.forEach(function(tabId){
+    var mask = document.getElementById('protected-mask-'+tabId);
+    if(mask) mask.style.display = 'flex';
+  });
+  // 若目前在受保護頁籤，跳回全隊總覽
+  var curTab = document.querySelector('.tab-content.active');
+  if(curTab && PROTECTED_TABS.indexOf(curTab.id.replace('tab-','')) !== -1){
+    var teamBtn = document.querySelector('nav button.active') || document.querySelector('nav button');
+    // 找並觸發全隊總覽按鈕
+    var allNavBtns = document.querySelectorAll('nav button');
+    allNavBtns.forEach(function(b){ b.classList.remove('active'); });
+    allNavBtns[0].classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
+    document.getElementById('tab-team').classList.add('active');
+  }
+}
+
+// 在受保護頁籤上方建立蓋板提示
+function buildProtectedMasks(){
+  PROTECTED_TABS.forEach(function(tabId){
+    var tab = document.getElementById('tab-'+tabId);
+    if(!tab) return;
+    // 建立蓋板
+    var mask = document.createElement('div');
+    mask.id = 'protected-mask-'+tabId;
+    mask.style.cssText = [
+      'display:flex','flex-direction:column','align-items:center','justify-content:center',
+      'position:absolute','top:0','left:0','width:100%','height:100%','min-height:260px',
+      'background:rgba(255,255,255,.97)','z-index:99','border-radius:14px',
+      'padding:40px 20px','box-sizing:border-box','text-align:center'
+    ].join(';');
+    mask.innerHTML = [
+      '<div style="font-size:3rem;margin-bottom:16px;">🔒</div>',
+      '<h3 style="font-size:1.1rem;color:#2c3e50;font-weight:800;margin:0 0 10px;">此功能需要管理者身份</h3>',
+      '<p style="font-size:.88rem;color:#666;margin:0 0 24px;line-height:1.6;">「資料上傳」、「手動調整」、「預設資料」<br>為管理者專用功能，請先登入。</p>',
+      '<button onclick="switchTab(\'admin\',document.getElementById(\'nav-admin-btn\'))" style="padding:11px 32px;border-radius:10px;border:none;background:linear-gradient(135deg,#005087,#0077c2);color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,80,135,.35);">前往 🔐 網頁管理 登入</button>'
+    ].join('');
+    // 設定 tab 為 relative 定位，讓蓋板能 absolute 覆蓋
+    tab.style.position = 'relative';
+    tab.insertBefore(mask, tab.firstChild);
+  });
+}
+
+// ===== 頁面初始化：預設顯示「好棒河馬」並渲染全隊總覽圖表 =====
+window.addEventListener('load', function initPageDefaults(){
+  // 建立受保護頁籤蓋板
+  buildProtectedMasks();
+
+  // 確保 currentTeam 為好棒河馬
+  currentTeam = '好棒河馬';
+  // 刷新球隊選擇器 UI（select / chips / 提示文字）
+  refreshTeamSelector();
+  // 重算所有統計資料
+  tableData = buildTableData();
+  tableData.sort(function(a,b){ return a.no - b.no; });
+  // 清除 chart 容器上殘留的舊 ECharts 實例屬性，避免 init() 衝突
+  ['chart-team-avg','chart-team-hits','chart-team-rbi'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el){
+      try{ var s=echarts.getInstanceByDom(el); if(s) s.dispose(); }catch(e){}
+      delete charts[id];
+    }
+  });
+  // 渲染全隊總覽圖表（tab-team 已有 active，容器可見，ECharts 能取得正確寬高）
+  renderTeam();
+});
 </script>
 
 
