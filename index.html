@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- 版本戳記：v20261104-1707 -->
+<!-- 版本戳記：v20261106-1216 -->
 <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;⚾&lt;/text&gt;&lt;/svg&gt;">
 <title>2026 就是棒 U10 秋季聯賽｜打擊統計系統</title>
 <!-- 外部函式庫：版本已鎖定，確保長期穩定 -->
@@ -6107,8 +6107,8 @@ function exportPageHTML(){
 
   // ★ 將版本鍵從 v3 升版為 v4，確保將此檔上傳後瀏覽器首次開啟時強制清山 localStorage 舊快取，
   // 並回到「全隊總覽」頁籤（因為 DATA_VERSION !== '1' 會再走初始化分支，最後呼叫 navBtns[0].click()）
-  // 升版：exportPageHTML 輸出的 HTML 使用 v6，確保瀏覽器強制清快取並載入最新資料
-  html = html.replace("const DATA_VERSION = 'u10_data_v6'", "const DATA_VERSION = 'u10_data_v6'");
+  // 升版：exportPageHTML 輸出的 HTML 使用 v7，確保瀏覽器強制清快取並載入最新資料
+  html = html.replace("const DATA_VERSION = 'u10_data_v5'", "const DATA_VERSION = 'u10_data_v7'");
 
   // ★ 確保輸出的 HTML 中，打擊/守備預覽區塊（含「輸出網頁」按鈕）一定可見
   html = html.replace(
@@ -6143,9 +6143,14 @@ function updateDefaultData(){
     localStorage.setItem('u10_default_team_games',JSON.stringify(TEAM_GAMES));
     // ★ 同步儲存逐打席明細（BATTING_DATA），確保重開頁面後可還原
     localStorage.setItem('u10_default_batting_data',JSON.stringify(BATTING_DATA));
+    // ★ 同步儲存守備資料，確保「還原預設守備數據」也能使用最新資料
+    localStorage.setItem('u10_def_default_defense',JSON.stringify(DEFENSE_DATA));
+    const _glUD={}; Object.keys(GAME_LABELS).forEach(k=>{ _glUD[k]=GAME_LABELS[k]; });
+    localStorage.setItem('u10_def_default_game_labels',JSON.stringify(_glUD));
     // ★ 更新版本鍵，確保此資料在下次重開頁面後仍被保留（不被強制覆寫）
     localStorage.setItem('u10_data_v5','1');
     localStorage.setItem('u10_data_v3','1'); // 向下相容
+    localStorage.setItem('u10_defaults_synced_v2','1'); // 向下相容
     // 同步顯示「資料上傳」與「手動調整」兩個頁籤的成功提示訊息
     ['setdefault-success','adj-setdefault-success'].forEach(id=>{
       const el=document.getElementById(id);
